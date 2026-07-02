@@ -155,7 +155,7 @@ Swagger UI is available when the backend is running:
 
 ## Roadmap
 
-See [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) for the 15-phase improvement roadmap including: Request Scoring, SLA Management, Bottleneck Detection, AI Next Best Action, Approval Workflow, Risk Register, and more.
+15-phase improvement roadmap including: Request Scoring, SLA Management, Bottleneck Detection, AI Next Best Action, Approval Workflow, Risk Register, and more.
 
 ---
 

@@ -3,21 +3,18 @@ package com.deliveryworkbench.service;
 import com.deliveryworkbench.ai.AIService;
 import com.deliveryworkbench.dto.RequirementResponse;
 import com.deliveryworkbench.dto.SaveRequirementRequest;
-import com.deliveryworkbench.entity.AIActionType;
-import com.deliveryworkbench.entity.ClarificationQuestion;
-import com.deliveryworkbench.entity.DeliveryRequest;
-import com.deliveryworkbench.entity.Requirement;
+import com.deliveryworkbench.entity.*;
 import com.deliveryworkbench.exception.ResourceNotFoundException;
 import com.deliveryworkbench.mapper.RequirementMapper;
 import com.deliveryworkbench.repository.ClarificationQuestionRepository;
 import com.deliveryworkbench.repository.DeliveryRequestRepository;
 import com.deliveryworkbench.repository.RequirementRepository;
+import com.deliveryworkbench.repository.RequirementVersionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,11 +22,13 @@ import java.util.stream.Collectors;
 public class RequirementService {
 
     private final RequirementRepository requirementRepository;
+    private final RequirementVersionRepository requirementVersionRepository;
     private final DeliveryRequestRepository requestRepository;
     private final ClarificationQuestionRepository questionRepository;
     private final RequirementMapper requirementMapper;
     private final AIService aiService;
     private final AIAuditLogService aiAuditLogService;
+    private final BottleneckAnalysisService bottleneckAnalysisService;
 
     @Transactional(readOnly = true)
     public RequirementResponse getByRequestId(Long requestId) {
@@ -44,16 +43,23 @@ public class RequirementService {
     }
 
     @Transactional
-    public RequirementResponse saveRequirement(Long requestId, SaveRequirementRequest dto) {
+    public RequirementResponse saveRequirement(Long requestId, SaveRequirementRequest dto, String changedBy) {
         DeliveryRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("DeliveryRequest not found with id: " + requestId));
 
         Requirement req = requirementRepository.findTopByRequest_IdOrderByVersionDesc(requestId)
                 .orElseGet(() -> createDefault(requestId));
 
-        // If transitioning to APPROVED, increment version
-        if ("APPROVED".equals(dto.getStatus()) && !"APPROVED".equals(req.getStatus())) {
+        boolean isNewVersion = false;
+        
+        // If transitioning to APPROVED or explicitly provided a change reason, increment version
+        if (("APPROVED".equals(dto.getStatus()) && !"APPROVED".equals(req.getStatus())) 
+             || (dto.getChangeReason() != null && !dto.getChangeReason().trim().isEmpty())) {
+            
+            // Create a snapshot of current state before updating to new version
+            snapshotVersion(req, dto.getChangeReason() != null ? dto.getChangeReason() : "Approved new version", changedBy);
             req.setVersion(req.getVersion() + 1);
+            isNewVersion = true;
         }
 
         req.setScope(dto.getScope());
@@ -65,7 +71,33 @@ public class RequirementService {
         req.setStatus(dto.getStatus());
 
         req = requirementRepository.save(req);
+
+        // Bottleneck rule: Requirement changes after READY_FOR_DEVELOPMENT implies potential HIGH_REWORK
+        if (isNewVersion && request.getStatus().ordinal() >= RequestStatus.READY_FOR_DEVELOPMENT.ordinal() 
+            && request.getStatus() != RequestStatus.CANCELLED && request.getStatus() != RequestStatus.RELEASED) {
+            bottleneckAnalysisService.logFinding(request, FindingType.HIGH_REWORK, FindingSeverity.HIGH, 
+                "Requirement was changed while request was in " + request.getStatus() + ". Version bumped to " + req.getVersion() + ".",
+                "Review requirement changes and adjust development scope.");
+        }
+
         return requirementMapper.toResponse(req);
+    }
+
+    private void snapshotVersion(Requirement req, String reason, String changedBy) {
+        RequirementVersion version = RequirementVersion.builder()
+                .requirement(req)
+                .requestId(req.getRequest().getId())
+                .version(req.getVersion())
+                .scope(req.getScope())
+                .outOfScope(req.getOutOfScope())
+                .userStory(req.getUserStory())
+                .acceptanceCriteria(req.getAcceptanceCriteria())
+                .assumptions(req.getAssumptions())
+                .dependencies(req.getDependencies())
+                .changeReason(reason)
+                .changedBy(changedBy)
+                .build();
+        requirementVersionRepository.save(version);
     }
 
     @Transactional
@@ -118,5 +150,26 @@ public class RequirementService {
                 .build();
 
         return requirementRepository.save(req);
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.deliveryworkbench.dto.RequirementVersionDto> getRequirementVersions(Long requestId) {
+        return requirementVersionRepository.findByRequestIdOrderByVersionDesc(requestId).stream()
+                .map(v -> com.deliveryworkbench.dto.RequirementVersionDto.builder()
+                        .id(v.getId())
+                        .requirementId(v.getRequirement().getId())
+                        .requestId(v.getRequestId())
+                        .version(v.getVersion())
+                        .scope(v.getScope())
+                        .outOfScope(v.getOutOfScope())
+                        .userStory(v.getUserStory())
+                        .acceptanceCriteria(v.getAcceptanceCriteria())
+                        .assumptions(v.getAssumptions())
+                        .dependencies(v.getDependencies())
+                        .changeReason(v.getChangeReason())
+                        .changedBy(v.getChangedBy())
+                        .createdAt(v.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

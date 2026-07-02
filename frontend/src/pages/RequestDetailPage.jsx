@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import api, { slaApi, bottleneckApi } from '../api';
+import api, { slaApi, bottleneckApi, nextBestActionApi } from '../api';
 import SlaBadge from '../components/SlaBadge';
+import NextBestActionCard from '../components/NextBestActionCard';
 
 export default function RequestDetailPage() {
   const { id } = useParams();
@@ -12,6 +13,7 @@ export default function RequestDetailPage() {
   const [priorityScore, setPriorityScore] = useState(null);
   const [aging, setAging] = useState(null);
   const [bottlenecks, setBottlenecks] = useState([]);
+  const [nextBestActions, setNextBestActions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,18 +23,20 @@ export default function RequestDetailPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [reqRes, histRes, scoreRes, agingRes, bottleneckRes] = await Promise.all([
+      const [reqRes, histRes, scoreRes, agingRes, bottleneckRes, nbaRes] = await Promise.all([
         api.get(`/requests/${id}`),
         api.get(`/requests/${id}/stage-history`),
         api.get(`/requests/${id}/priority-score`).catch(() => ({ data: null })),
         slaApi.getAgingForRequest(id).catch(() => ({ data: null })),
-        bottleneckApi.getFindingsForRequest(id).catch(() => ({ data: [] }))
+        bottleneckApi.getFindingsForRequest(id).catch(() => ({ data: [] })),
+        nextBestActionApi.getActions(id).catch(() => ({ data: [] }))
       ]);
       setRequest(reqRes.data);
       setHistory(histRes.data);
       setPriorityScore(scoreRes.data);
       if (agingRes.data) setAging(agingRes.data);
       if (bottleneckRes.data) setBottlenecks(bottleneckRes.data);
+      if (nbaRes.data) setNextBestActions(nbaRes.data);
     } catch (err) {
       console.error('Failed to fetch request data', err);
     } finally {
@@ -74,6 +78,26 @@ export default function RequestDetailPage() {
       setBottlenecks(res.data);
     } catch (err) {
       alert('Failed to update status');
+    }
+  };
+
+  const handleGenerateNBA = async () => {
+    try {
+      await nextBestActionApi.generate(id);
+      const res = await nextBestActionApi.getActions(id);
+      setNextBestActions(res.data);
+    } catch (err) {
+      alert('Failed to generate next best action');
+    }
+  };
+
+  const handleUpdateNBAStatus = async (actionId, status) => {
+    try {
+      await nextBestActionApi.updateStatus(id, actionId, status);
+      const res = await nextBestActionApi.getActions(id);
+      setNextBestActions(res.data);
+    } catch (err) {
+      alert('Failed to update action status');
     }
   };
 
@@ -153,6 +177,10 @@ export default function RequestDetailPage() {
             <ModuleCard title="Impact Analysis" path={`/requests/${id}/impact`} desc="Assess risks and impacts on other systems." />
             <ModuleCard title="QA Test Scenarios" path={`/requests/${id}/qa-scenarios`} desc="Manage test scenarios for validation." />
             <ModuleCard title="Release Readiness" path={`/requests/${id}/release-readiness`} desc="Final checklist before production release." />
+            <ModuleCard title="Meeting Notes" path={`/requests/${id}/meeting-notes`} desc="Log and summarize meeting discussions." />
+            <ModuleCard title="Decision Log" path={`/requests/${id}/decision-logs`} desc="Record key project decisions." />
+            <ModuleCard title="Evidence & Attachments" path={`/requests/${id}/attachments`} desc="Upload and manage files." />
+            <ModuleCard title="Approval Center" path={`/requests/${id}/approvals`} desc="Manage required sign-offs and approvals." />
           </div>
         </div>
 
@@ -197,9 +225,31 @@ export default function RequestDetailPage() {
               {history.length === 0 && <p className="text-muted">No history yet.</p>}
             </div>
           </div>
+
+          <div className="card mt-8 border-indigo-500">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-indigo-800">Next Best Action</h3>
+              <button className="btn btn-primary bg-indigo-600 border-indigo-600 text-white text-sm" onClick={handleGenerateNBA}>
+                Ask AI for Recommendation
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              {nextBestActions.length === 0 ? (
+                <p className="text-gray-500">No actions recommended yet. Ask AI to evaluate the current context.</p>
+              ) : (
+                nextBestActions.map(action => (
+                  <NextBestActionCard 
+                    key={action.id} 
+                    action={action} 
+                    onStatusUpdate={handleUpdateNBAStatus} 
+                  />
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="card mt-8 border-red-500">
+        <div style={{ gridColumn: '1 / -1' }} className="flex flex-col gap-8">
           <div className="flex justify-between items-center">
             <h3>Bottleneck Findings</h3>
             <button className="btn btn-secondary text-sm" onClick={handleAnalyzeBottlenecks}>

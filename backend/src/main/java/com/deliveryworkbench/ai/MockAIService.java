@@ -298,4 +298,75 @@ public class MockAIService implements AIService {
                 Note: This is an AI-generated draft. A human must review and approve the final priority score (BR-05).
                 """.formatted(recommendation, notes, requestTitle, businessProblem, expectedOutcome);
     }
+
+    @Override
+    public NextBestActionRecommendation generateNextBestAction(
+            Long requestId,
+            String status,
+            boolean isDorReady,
+            long clarificationCount,
+            long openBottlenecks,
+            String requestedBy) {
+
+        log.info("[MockAI] generateNextBestAction for requestId={}", requestId);
+
+        String recommendation = "No clear action identified. Please review manually.";
+        String reason = "Context does not match any known proactive patterns.";
+
+        if (openBottlenecks > 0) {
+            recommendation = "Review and resolve active bottleneck findings.";
+            reason = "There are " + openBottlenecks + " open bottleneck(s) that need intervention before proceeding smoothly.";
+        } else if ("SUBMITTED".equals(status) || "NEED_CLARIFICATION".equals(status)) {
+            recommendation = "Complete Definition of Ready (DoR) checklist.";
+            reason = "The request is in early stages. Completing the DoR ensures all requirements are clear before moving to development.";
+        } else if ("READY_FOR_DEVELOPMENT".equals(status)) {
+            if (!isDorReady) {
+                recommendation = "Finish remaining DoR items or reassess readiness.";
+                reason = "Request is marked ready for development but DoR is incomplete. This is a risk.";
+            } else {
+                recommendation = "Assign to a developer and move to IN_DEVELOPMENT.";
+                reason = "Request is ready and awaiting development resources.";
+            }
+        } else if ("IN_DEVELOPMENT".equals(status)) {
+            recommendation = "Complete coding and peer review, then move to SIT.";
+            reason = "Standard development lifecycle progression.";
+        } else if ("SIT".equals(status)) {
+            recommendation = "Complete SIT test execution and move to UAT.";
+            reason = "Testing phase active. Needs SIT sign-off.";
+        } else if ("UAT".equals(status)) {
+            recommendation = "Obtain UAT sign-off from Business Owner (" + requestedBy + ") and move to READY_FOR_RELEASE.";
+            reason = "UAT must be explicitly approved by the business owner before release.";
+        } else if ("READY_FOR_RELEASE".equals(status)) {
+            recommendation = "Complete Release Readiness checklist and deploy to PROD.";
+            reason = "Awaiting deployment execution.";
+        } else if ("PROD".equals(status)) {
+            recommendation = "Monitor system post-deployment. No further action needed.";
+            reason = "Request is completed.";
+        }
+
+        return NextBestActionRecommendation.builder()
+                .recommendation(recommendation)
+                .reason(reason)
+                .build();
+    }
+
+    @Override
+    public MeetingNoteSummary summarizeMeetingNotes(String rawNotes) {
+        log.info("[MockAI] Summarizing meeting notes: {} characters", rawNotes != null ? rawNotes.length() : 0);
+        
+        if (rawNotes == null || rawNotes.isBlank()) {
+            return MeetingNoteSummary.builder()
+                    .discussionSummary("No notes provided.")
+                    .decisions("None")
+                    .actionItems("None")
+                    .build();
+        }
+
+        // Extremely simple deterministic summarization for mock purposes
+        return MeetingNoteSummary.builder()
+                .discussionSummary("The team discussed the requirements and technical details based on the provided notes. Key points were reviewed to ensure alignment on the delivery approach.")
+                .decisions("- Approved the proposed scope.\n- Agreed to proceed with the current technical architecture.")
+                .actionItems("- Update the Definition of Ready.\n- Follow up with the IT Owner for the API specification.")
+                .build();
+    }
 }

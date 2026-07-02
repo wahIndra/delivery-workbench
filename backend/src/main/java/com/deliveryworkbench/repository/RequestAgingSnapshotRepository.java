@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface RequestAgingSnapshotRepository extends JpaRepository<RequestAgingSnapshot, Long> {
     List<RequestAgingSnapshot> findByRequest_IdOrderByCalculatedAtDesc(Long requestId);
+    java.util.Optional<RequestAgingSnapshot> findTopByRequest_IdOrderByCalculatedAtDesc(Long requestId);
 }

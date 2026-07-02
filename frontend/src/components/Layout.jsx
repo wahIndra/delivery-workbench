@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 
 export default function Layout({ children }) {
   const location = useLocation();
@@ -56,6 +57,7 @@ export default function Layout({ children }) {
             IT Delivery Governance
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <span className="badge badge-purple">Beta</span>
           </div>
         </header>

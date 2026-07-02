@@ -1,14 +1,15 @@
 spring:
   application:
-    name: delivery-workbench
+    name: delivery-workbench-backend
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/deliveryworkbench}
-    username: ${DB_USERNAME:dwuser}
-    password: ${DB_PASSWORD:dwpassword}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:deliverydb
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
 
   jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: validate
     show-sql: false
@@ -51,3 +52,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     display-request-duration: true
+
+attachment:
+  upload-dir: ./attachments

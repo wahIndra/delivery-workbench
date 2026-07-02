@@ -15,4 +15,5 @@ public class SaveRequirementRequest {
 
     @NotNull(message = "Status is required")
     private String status;
+    private String changeReason;
 }

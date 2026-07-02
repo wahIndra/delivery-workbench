@@ -24,6 +24,7 @@ public class BottleneckAnalysisService {
     private final BottleneckFindingRepository findingRepository;
     private final DeliveryRequestRepository requestRepository;
     private final DeliveryStageHistoryRepository historyRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public List<BottleneckFindingResponse> analyzeRequest(Long requestId) {
@@ -77,7 +78,7 @@ public class BottleneckAnalysisService {
         }
     }
 
-    private void createFindingIfNotExists(DeliveryRequest request, FindingType type, FindingSeverity severity, String description, String recommendedAction) {
+    public void createFindingIfNotExists(DeliveryRequest request, FindingType type, FindingSeverity severity, String description, String recommendedAction) {
         boolean exists = findingRepository.existsByRequest_IdAndFindingTypeAndStatus(request.getId(), type, FindingStatus.OPEN);
         if (!exists) {
             BottleneckFinding finding = BottleneckFinding.builder()
@@ -91,7 +92,22 @@ public class BottleneckAnalysisService {
                     .build();
             findingRepository.save(finding);
             log.info("Created new Bottleneck finding {} for Request {}", type, request.getRequestCode());
+            
+            // Trigger Notification
+            if (request.getItOwner() != null) {
+                notificationService.createNotification(
+                        request.getItOwner(),
+                        request,
+                        com.deliveryworkbench.entity.NotificationType.BOTTLENECK_FOUND,
+                        "Bottleneck Detected: " + type,
+                        description
+                );
+            }
         }
+    }
+
+    public void logFinding(DeliveryRequest request, FindingType type, FindingSeverity severity, String description, String recommendedAction) {
+        createFindingIfNotExists(request, type, severity, description, recommendedAction);
     }
 
     @Transactional(readOnly = true)

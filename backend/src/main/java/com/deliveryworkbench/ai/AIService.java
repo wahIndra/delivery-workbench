@@ -112,4 +112,17 @@ public interface AIService {
             String businessProblem,
             String expectedOutcome
     );
+
+    /**
+     * Generates the Next Best Action recommendation for a delivery request based on context.
+     */
+    NextBestActionRecommendation generateNextBestAction(
+            Long requestId,
+            String status,
+            boolean isDorReady,
+            long clarificationCount,
+            long openBottlenecks,
+            String requestedBy);
+
+    MeetingNoteSummary summarizeMeetingNotes(String rawNotes);
 }

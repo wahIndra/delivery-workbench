@@ -25,13 +25,19 @@ public class RequirementController {
     @PreAuthorize("hasAnyRole('SYSTEM_ANALYST', 'ADMIN')")
     public ResponseEntity<RequirementResponse> saveRequirement(
             @PathVariable Long requestId,
-            @Valid @RequestBody SaveRequirementRequest request) {
-        return ResponseEntity.ok(requirementService.saveRequirement(requestId, request));
+            @Valid @RequestBody SaveRequirementRequest request,
+            @RequestHeader(value = "X-User", defaultValue = "system") String user) {
+        return ResponseEntity.ok(requirementService.saveRequirement(requestId, request, user));
     }
 
     @PostMapping("/ai-generate")
     @PreAuthorize("hasAnyRole('SYSTEM_ANALYST', 'ADMIN')")
     public ResponseEntity<RequirementResponse> generateAiRequirement(@PathVariable Long requestId) {
         return ResponseEntity.ok(requirementService.generateAiRequirement(requestId));
+    }
+
+    @GetMapping("/versions")
+    public ResponseEntity<java.util.List<com.deliveryworkbench.dto.RequirementVersionDto>> getVersions(@PathVariable Long requestId) {
+        return ResponseEntity.ok(requirementService.getRequirementVersions(requestId));
     }
 }

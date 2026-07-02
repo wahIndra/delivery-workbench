@@ -27,6 +27,8 @@ public class WorkflowService {
     private final DeliveryStageHistoryRepository historyRepository;
     private final DefinitionOfReadyChecklistRepository dorRepository;
     private final ReleaseReadinessRepository releaseReadinessRepository;
+    private final com.deliveryworkbench.repository.ApprovalRepository approvalRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public DeliveryRequest changeStatus(DeliveryRequest request, RequestStatus newStatus, String notes) {
@@ -43,6 +45,28 @@ public class WorkflowService {
         DeliveryRequest updatedRequest = requestRepository.save(request);
 
         recordHistory(updatedRequest, oldStatus, newStatus, notes);
+        
+        // Trigger notification
+        if (request.getItOwner() != null) {
+            notificationService.createNotification(
+                    request.getItOwner(),
+                    request,
+                    com.deliveryworkbench.entity.NotificationType.STATUS_CHANGED,
+                    "Status Changed to " + newStatus,
+                    "Request " + request.getRequestCode() + " was moved from " + oldStatus + " to " + newStatus
+            );
+        }
+        
+        if (newStatus == RequestStatus.READY_FOR_RELEASE) {
+            // Notify release manager role
+            notificationService.createNotification(
+                    "ROLE_ADMIN", // Release Manager is an ADMIN in our mock setup, or we could add a RELEASE_MANAGER role
+                    request,
+                    com.deliveryworkbench.entity.NotificationType.RELEASE_READY,
+                    "Request Ready for Release",
+                    "Request " + request.getRequestCode() + " is ready for release scheduling."
+            );
+        }
 
         return updatedRequest;
     }
@@ -56,6 +80,13 @@ public class WorkflowService {
             if (request.getItOwner() == null || request.getItOwner().isBlank()) {
                 throw new BusinessRuleViolationException("BR-09: IT Owner must be assigned before moving to READY_FOR_ANALYSIS");
             }
+            
+            // Phase 9: Requirement signoff required before READY_FOR_ANALYSIS
+            boolean hasReqSignoff = approvalRepository.existsByRequest_IdAndApprovalTypeAndStatus(
+                    request.getId(), com.deliveryworkbench.entity.ApprovalType.REQUIREMENT_SIGNOFF, com.deliveryworkbench.entity.ApprovalStatus.APPROVED);
+            if (!hasReqSignoff) {
+                throw new BusinessRuleViolationException("REQUIREMENT_SIGNOFF must be approved before moving to READY_FOR_ANALYSIS");
+            }
         }
 
         // BR-01: Cannot move to READY_FOR_DEVELOPMENT unless DoR readyStatus == READY
@@ -63,6 +94,13 @@ public class WorkflowService {
             boolean isReady = dorRepository.existsByRequest_IdAndReadyStatus(request.getId(), ReadyStatus.READY);
             if (!isReady) {
                 throw new BusinessRuleViolationException("BR-01: Definition of Ready must be fully completed and approved before READY_FOR_DEVELOPMENT");
+            }
+            
+            // Phase 9: Solution design approval required before READY_FOR_DEVELOPMENT
+            boolean hasDesignApproval = approvalRepository.existsByRequest_IdAndApprovalTypeAndStatus(
+                    request.getId(), com.deliveryworkbench.entity.ApprovalType.SOLUTION_DESIGN_APPROVAL, com.deliveryworkbench.entity.ApprovalStatus.APPROVED);
+            if (!hasDesignApproval) {
+                throw new BusinessRuleViolationException("SOLUTION_DESIGN_APPROVAL must be approved before moving to READY_FOR_DEVELOPMENT");
             }
         }
 
@@ -73,9 +111,20 @@ public class WorkflowService {
                 throw new BusinessRuleViolationException("BR-02: Release Readiness checklist must be fully approved before READY_FOR_RELEASE");
             }
             
-            boolean isUatSignedOff = releaseReadinessRepository.existsByRequest_IdAndUatSignedOffTrue(request.getId());
+            // Phase 9: Generic UAT_SIGNOFF required instead of (or in addition to) old boolean flag
+            boolean isUatSignedOff = approvalRepository.existsByRequest_IdAndApprovalTypeAndStatus(
+                    request.getId(), com.deliveryworkbench.entity.ApprovalType.UAT_SIGNOFF, com.deliveryworkbench.entity.ApprovalStatus.APPROVED);
             if (!isUatSignedOff) {
-                throw new BusinessRuleViolationException("BR-10: UAT must be signed off before READY_FOR_RELEASE");
+                throw new BusinessRuleViolationException("BR-10: UAT_SIGNOFF must be approved before moving to READY_FOR_RELEASE");
+            }
+        }
+        
+        // Phase 9: Release approval required before RELEASED
+        if (newStatus == RequestStatus.RELEASED) {
+            boolean hasReleaseApproval = approvalRepository.existsByRequest_IdAndApprovalTypeAndStatus(
+                    request.getId(), com.deliveryworkbench.entity.ApprovalType.RELEASE_APPROVAL, com.deliveryworkbench.entity.ApprovalStatus.APPROVED);
+            if (!hasReleaseApproval) {
+                throw new BusinessRuleViolationException("RELEASE_APPROVAL must be approved before moving to RELEASED");
             }
         }
     }

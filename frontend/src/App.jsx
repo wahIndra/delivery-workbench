@@ -13,7 +13,12 @@ import QATestScenarioPage from './pages/QATestScenarioPage';
 import ReleaseReadinessPage from './pages/ReleaseReadinessPage';
 import PriorityScoringPage from './pages/PriorityScoringPage';
 import AIAuditLogPage from './pages/AIAuditLogPage';
+import DecisionLogPage from './pages/DecisionLogPage';
+import MeetingNotesPage from './pages/MeetingNotesPage';
+import AttachmentsPage from './pages/AttachmentsPage';
 import AdminUserPage from './pages/AdminUserPage';
+import ApprovalPage from './pages/ApprovalPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 function App() {
   return (
@@ -38,10 +43,17 @@ function App() {
         <Route path="/requests/:id/impact" element={<Layout><ImpactAnalysisPage /></Layout>} />
         <Route path="/requests/:id/qa-scenarios" element={<Layout><QATestScenarioPage /></Layout>} />
         <Route path="/requests/:id/release-readiness" element={<Layout><ReleaseReadinessPage /></Layout>} />
+        <Route path="/requests/:id/decision-logs" element={<Layout><DecisionLogPage /></Layout>} />
+        <Route path="/requests/:id/meeting-notes" element={<Layout><MeetingNotesPage /></Layout>} />
+        <Route path="/requests/:id/attachments" element={<Layout><AttachmentsPage /></Layout>} />
+        <Route path="/requests/:id/approvals" element={<Layout><ApprovalPage /></Layout>} />
         
         {/* Phase 4 Routes */}
         <Route path="/ai-audit-logs" element={<Layout><AIAuditLogPage /></Layout>} />
         <Route path="/admin/users" element={<Layout><AdminUserPage /></Layout>} />
+        
+        {/* Phase 10 Routes */}
+        <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
         
         <Route path="*" element={<Layout><div className="card text-center p-8"><h2>404 — Page Not Found</h2></div></Layout>} />
       </Routes>

@@ -29,6 +29,7 @@ public class ClarificationQuestionService {
     private final ClarificationQuestionMapper questionMapper;
     private final AIService aiService;
     private final AIAuditLogService aiAuditLogService;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<ClarificationQuestionResponse> getQuestionsByRequestId(Long requestId) {
@@ -60,6 +61,18 @@ public class ClarificationQuestionService {
                 .build();
 
         question = questionRepository.save(question);
+        
+        // Notify owner
+        if (request.getItOwner() != null) {
+            notificationService.createNotification(
+                    request.getItOwner(),
+                    request,
+                    com.deliveryworkbench.entity.NotificationType.CLARIFICATION_REQUIRED,
+                    "Clarification Required",
+                    "A new clarification question has been asked on request " + request.getRequestCode()
+            );
+        }
+        
         return questionMapper.toResponse(question);
     }
 

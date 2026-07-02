@@ -1,9 +1,8 @@
 package com.deliveryworkbench.service;
 
-import com.deliveryworkbench.entity.DeliveryRequest;
-import com.deliveryworkbench.entity.ReadyStatus;
-import com.deliveryworkbench.entity.RequestStatus;
+import com.deliveryworkbench.entity.*;
 import com.deliveryworkbench.exception.BusinessRuleViolationException;
+import com.deliveryworkbench.repository.ApprovalRepository;
 import com.deliveryworkbench.repository.DefinitionOfReadyChecklistRepository;
 import com.deliveryworkbench.repository.DeliveryRequestRepository;
 import com.deliveryworkbench.repository.DeliveryStageHistoryRepository;
@@ -23,7 +22,7 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for WorkflowService.
- * Tests BR-01 (DoR gate), BR-02/BR-10 (Release gate), BR-09 (Owner required).
+ * Tests BR-01 (DoR gate), BR-02/BR-10 (Release gate), BR-09 (Owner required), and Phase 9 Approvals.
  */
 @ExtendWith(MockitoExtension.class)
 class WorkflowServiceTest {
@@ -36,6 +35,10 @@ class WorkflowServiceTest {
     private DefinitionOfReadyChecklistRepository dorRepository;
     @Mock
     private ReleaseReadinessRepository releaseReadinessRepository;
+    @Mock
+    private ApprovalRepository approvalRepository;
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private WorkflowService workflowService;
@@ -69,9 +72,11 @@ class WorkflowServiceTest {
     }
 
     @Test
-    @DisplayName("BR-01: changeStatus to READY_FOR_DEVELOPMENT should succeed when DoR is READY")
-    void shouldSucceedWhenDorReady() {
+    @DisplayName("BR-01 & Phase 9: changeStatus to READY_FOR_DEVELOPMENT should succeed when DoR is READY and Solution Design approved")
+    void shouldSucceedWhenDorReadyAndApproved() {
         given(dorRepository.existsByRequest_IdAndReadyStatus(1L, ReadyStatus.READY))
+                .willReturn(true);
+        given(approvalRepository.existsByRequest_IdAndApprovalTypeAndStatus(1L, ApprovalType.SOLUTION_DESIGN_APPROVAL, ApprovalStatus.APPROVED))
                 .willReturn(true);
         given(requestRepository.save(any())).willReturn(request);
 
@@ -81,7 +86,7 @@ class WorkflowServiceTest {
         verify(historyRepository).save(any());
     }
 
-    // ── BR-02 / BR-10 Tests ──────────────────────────────────────────────────
+    // ── BR-02 / BR-10 / Phase 9 Tests ──────────────────────────────────────────────────
 
     @Test
     @DisplayName("BR-02: changeStatus to READY_FOR_RELEASE should throw when release readiness not approved")
@@ -98,13 +103,13 @@ class WorkflowServiceTest {
     }
 
     @Test
-    @DisplayName("BR-10: changeStatus to READY_FOR_RELEASE should throw when UAT not signed off")
+    @DisplayName("BR-10: changeStatus to READY_FOR_RELEASE should throw when UAT not signed off via Approval")
     void shouldThrowWhenUatNotSignedOff() {
         request.setStatus(RequestStatus.UAT);
 
         given(releaseReadinessRepository.existsByRequest_IdAndReadyForReleaseTrue(1L))
                 .willReturn(true);
-        given(releaseReadinessRepository.existsByRequest_IdAndUatSignedOffTrue(1L))
+        given(approvalRepository.existsByRequest_IdAndApprovalTypeAndStatus(1L, ApprovalType.UAT_SIGNOFF, ApprovalStatus.APPROVED))
                 .willReturn(false);
 
         assertThatThrownBy(() ->
@@ -113,7 +118,7 @@ class WorkflowServiceTest {
                 .hasMessageContaining("BR-10");
     }
 
-    // ── BR-09 Tests ───────────────────────────────────────────────────────────
+    // ── BR-09 & Phase 9 Tests ───────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("BR-09: changeStatus to READY_FOR_ANALYSIS should throw when businessOwner is missing")
@@ -127,14 +132,15 @@ class WorkflowServiceTest {
     }
 
     @Test
-    @DisplayName("BR-09: changeStatus to READY_FOR_ANALYSIS should throw when itOwner is missing")
-    void shouldThrowWhenItOwnerMissing() {
-        request.setItOwner(null);
+    @DisplayName("Phase 9: changeStatus to READY_FOR_ANALYSIS should throw when Requirement Signoff is missing")
+    void shouldThrowWhenRequirementSignoffMissing() {
+        given(approvalRepository.existsByRequest_IdAndApprovalTypeAndStatus(1L, ApprovalType.REQUIREMENT_SIGNOFF, ApprovalStatus.APPROVED))
+                .willReturn(false);
 
         assertThatThrownBy(() ->
                 workflowService.changeStatus(request, RequestStatus.READY_FOR_ANALYSIS, "attempt"))
                 .isInstanceOf(BusinessRuleViolationException.class)
-                .hasMessageContaining("BR-09");
+                .hasMessageContaining("REQUIREMENT_SIGNOFF");
     }
 
     @Test

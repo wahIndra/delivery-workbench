@@ -25,6 +25,7 @@ public class SlaAndAgingService {
     private final DeliveryRequestRepository requestRepository;
     private final StageSlaPolicyRepository slaPolicyRepository;
     private final RequestAgingSnapshotRepository snapshotRepository;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public RequestAgingResponse getAgingForRequest(Long requestId) {
@@ -111,5 +112,57 @@ public class SlaAndAgingService {
                 .slaHours(slaHours)
                 .slaStatus(status)
                 .build();
+    }
+
+    @Transactional
+    public void runSlaChecksAndNotify() {
+        List<DeliveryRequest> activeRequests = requestRepository.findAll().stream()
+                .filter(r -> r.getStatus() != RequestStatus.RELEASED && r.getStatus() != RequestStatus.CANCELLED)
+                .collect(Collectors.toList());
+
+        for (DeliveryRequest request : activeRequests) {
+            RequestAgingResponse aging = calculateAging(request);
+            
+            if (aging.getSlaStatus() == SlaStatus.WARNING || aging.getSlaStatus() == SlaStatus.BREACHED) {
+                // Check latest snapshot to see if we already notified for this status in this stage
+                Optional<RequestAgingSnapshot> latestSnapshot = snapshotRepository.findTopByRequest_IdOrderByCalculatedAtDesc(request.getId());
+                
+                boolean shouldNotify = false;
+                if (latestSnapshot.isEmpty()) {
+                    shouldNotify = true;
+                } else {
+                    RequestAgingSnapshot snap = latestSnapshot.get();
+                    if (snap.getCurrentStatus() != request.getStatus() || snap.getSlaStatus() != aging.getSlaStatus()) {
+                        // Only notify if we transitioned into this state for the first time in this stage
+                        shouldNotify = true;
+                    }
+                }
+                
+                if (shouldNotify) {
+                    // Trigger notification
+                    if (request.getItOwner() != null) {
+                        notificationService.createNotification(
+                                request.getItOwner(),
+                                request,
+                                aging.getSlaStatus() == SlaStatus.BREACHED ? com.deliveryworkbench.entity.NotificationType.SLA_BREACH : com.deliveryworkbench.entity.NotificationType.SLA_WARNING,
+                                "SLA " + aging.getSlaStatus() + ": " + request.getRequestCode(),
+                                "Request is in " + aging.getSlaStatus() + " for stage " + request.getStatus()
+                        );
+                    }
+                    
+                    // Save snapshot
+                    RequestAgingSnapshot newSnap = RequestAgingSnapshot.builder()
+                            .request(request)
+                            .currentStatus(request.getStatus())
+                            .enteredStatusAt(request.getStatusEnteredAt() != null ? request.getStatusEnteredAt() : request.getUpdatedAt())
+                            .agingHours(aging.getAgingHours())
+                            .slaHours(aging.getSlaHours())
+                            .slaStatus(aging.getSlaStatus())
+                            .calculatedAt(OffsetDateTime.now())
+                            .build();
+                    snapshotRepository.save(newSnap);
+                }
+            }
+        }
     }
 }

@@ -26,10 +26,15 @@ class BottleneckAnalysisServiceTest {
 
     @Mock
     private BottleneckFindingRepository findingRepository;
+
     @Mock
     private DeliveryRequestRepository requestRepository;
+
     @Mock
     private DeliveryStageHistoryRepository historyRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private BottleneckAnalysisService service;

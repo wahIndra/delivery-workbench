@@ -30,8 +30,12 @@ class SlaAndAgingServiceTest {
     private DeliveryRequestRepository requestRepository;
     @Mock
     private StageSlaPolicyRepository slaPolicyRepository;
+
     @Mock
     private RequestAgingSnapshotRepository snapshotRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private SlaAndAgingService slaService;
