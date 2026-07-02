@@ -1,0 +1,13 @@
+package com.deliveryworkbench.entity;
+
+public enum FindingType {
+    AGING_STAGE,
+    REPEATED_CLARIFICATION,
+    UAT_DELAY,
+    MISSING_OWNER,
+    MISSING_ACCEPTANCE_CRITERIA,
+    MISSING_IMPACT_ANALYSIS,
+    RELEASE_READINESS_DELAY,
+    HIGH_REWORK,
+    SLA_BREACH
+}

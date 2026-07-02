@@ -37,4 +37,11 @@ export const slaApi = {
   getDashboardMetrics: () => api.get(`/dashboard/sla-metrics`)
 };
 
+export const bottleneckApi = {
+  analyzeRequest: (requestId) => api.post(`/requests/${requestId}/bottlenecks/analyze`),
+  getFindingsForRequest: (requestId) => api.get(`/requests/${requestId}/bottlenecks`),
+  getActiveFindings: () => api.get(`/dashboard/bottlenecks/active`),
+  updateStatus: (requestId, findingId, status) => api.put(`/requests/${requestId}/bottlenecks/${findingId}/status`, { status })
+};
+
 export default api;

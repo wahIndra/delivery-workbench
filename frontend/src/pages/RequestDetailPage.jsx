@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import api, { slaApi } from '../api';
+import api, { slaApi, bottleneckApi } from '../api';
 import SlaBadge from '../components/SlaBadge';
 
 export default function RequestDetailPage() {
@@ -11,6 +11,7 @@ export default function RequestDetailPage() {
   const [history, setHistory] = useState([]);
   const [priorityScore, setPriorityScore] = useState(null);
   const [aging, setAging] = useState(null);
+  const [bottlenecks, setBottlenecks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,16 +21,18 @@ export default function RequestDetailPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [reqRes, histRes, scoreRes, agingRes] = await Promise.all([
+      const [reqRes, histRes, scoreRes, agingRes, bottleneckRes] = await Promise.all([
         api.get(`/requests/${id}`),
         api.get(`/requests/${id}/stage-history`),
         api.get(`/requests/${id}/priority-score`).catch(() => ({ data: null })),
-        slaApi.getAgingForRequest(id).catch(() => ({ data: null }))
+        slaApi.getAgingForRequest(id).catch(() => ({ data: null })),
+        bottleneckApi.getFindingsForRequest(id).catch(() => ({ data: [] }))
       ]);
       setRequest(reqRes.data);
       setHistory(histRes.data);
       setPriorityScore(scoreRes.data);
       if (agingRes.data) setAging(agingRes.data);
+      if (bottleneckRes.data) setBottlenecks(bottleneckRes.data);
     } catch (err) {
       console.error('Failed to fetch request data', err);
     } finally {
@@ -54,7 +57,27 @@ export default function RequestDetailPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center"><div className="spinner"></div></div>;
+  const handleAnalyzeBottlenecks = async () => {
+    try {
+      const res = await bottleneckApi.analyzeRequest(id);
+      setBottlenecks(res.data);
+      alert('Bottleneck analysis completed.');
+    } catch (err) {
+      alert('Failed to run analysis');
+    }
+  };
+
+  const handleUpdateBottleneckStatus = async (findingId, status) => {
+    try {
+      await bottleneckApi.updateStatus(id, findingId, status);
+      const res = await bottleneckApi.getFindingsForRequest(id);
+      setBottlenecks(res.data);
+    } catch (err) {
+      alert('Failed to update status');
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center"><div className="spinner"></div><p className="mt-4">Loading request details...</p></div>;
   if (!request) return <div>Request not found</div>;
 
   const role = localStorage.getItem('mockRole');
@@ -175,6 +198,51 @@ export default function RequestDetailPage() {
             </div>
           </div>
         </div>
+
+        <div className="card mt-8 border-red-500">
+          <div className="flex justify-between items-center">
+            <h3>Bottleneck Findings</h3>
+            <button className="btn btn-secondary text-sm" onClick={handleAnalyzeBottlenecks}>
+              Run Analysis
+            </button>
+          </div>
+          <div className="mt-4 flex flex-col gap-4">
+            {bottlenecks.length === 0 ? (
+              <p className="text-gray-500">No bottlenecks detected.</p>
+            ) : (
+              bottlenecks.map(b => (
+                <div key={b.id} className="p-4 bg-gray-50 rounded-md border flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <span className={`badge ${b.severity === 'CRITICAL' ? 'bg-red-200 text-red-900' : b.severity === 'HIGH' ? 'bg-orange-200 text-orange-900' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {b.severity}
+                      </span>
+                      <span className="font-semibold">{b.findingType}</span>
+                    </div>
+                    <div>
+                      {b.status === 'OPEN' ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleUpdateBottleneckStatus(b.id, 'ACKNOWLEDGED')} className="btn btn-secondary text-xs">Ack</button>
+                          <button onClick={() => handleUpdateBottleneckStatus(b.id, 'RESOLVED')} className="btn btn-primary text-xs bg-green-600 border-green-600 text-white">Resolve</button>
+                          <button onClick={() => handleUpdateBottleneckStatus(b.id, 'IGNORED')} className="text-gray-400 hover:text-gray-600 text-xs underline">Ignore</button>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-semibold text-gray-500">{b.status}</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm">{b.description}</p>
+                  {b.recommendedAction && (
+                    <p className="text-sm text-blue-800 bg-blue-50 p-2 rounded mt-1">
+                      <strong>AI Suggestion:</strong> {b.recommendedAction}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );

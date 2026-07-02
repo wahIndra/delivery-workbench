@@ -4,6 +4,7 @@ import api from '../api';
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
   const [slaMetrics, setSlaMetrics] = useState(null);
+  const [activeBottlenecks, setActiveBottlenecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -14,13 +15,17 @@ export default function DashboardPage() {
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      const [dashRes, slaRes] = await Promise.all([
+      const [dashRes, slaRes, bottleneckRes] = await Promise.all([
         api.get('/dashboard/metrics'),
-        api.get('/dashboard/sla-metrics').catch(() => ({ data: null }))
+        api.get('/dashboard/sla-metrics').catch(() => ({ data: null })),
+        api.get('/dashboard/bottlenecks/active').catch(() => ({ data: [] }))
       ]);
       setMetrics(dashRes.data);
       if (slaRes.data) {
         setSlaMetrics(slaRes.data);
+      }
+      if (bottleneckRes.data) {
+        setActiveBottlenecks(bottleneckRes.data);
       }
       setError(null);
     } catch (err) {
@@ -139,6 +144,28 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+
+      {activeBottlenecks && activeBottlenecks.length > 0 && (
+        <>
+          <h2 className="mt-8 mb-4">Active System Bottlenecks</h2>
+          <div className="card border-orange-500">
+            <h3 className="text-orange-700">Top Pending Interventions ({activeBottlenecks.length})</h3>
+            <div className="mt-4 flex flex-col gap-2">
+              {activeBottlenecks.slice(0, 5).map(b => (
+                <div key={b.id} className="flex justify-between items-center pb-2 border-b">
+                  <div className="flex gap-4">
+                    <span className={`badge ${b.severity === 'CRITICAL' ? 'bg-red-200 text-red-900' : 'bg-orange-100 text-orange-800'}`}>{b.severity}</span>
+                    <span className="font-semibold">{b.findingType}</span>
+                  </div>
+                  <span className="text-sm text-gray-600 truncate max-w-md">{b.description}</span>
+                  <a href={`/requests/${b.requestId}`} className="text-sm text-primary-600 hover:underline">View Request</a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }
