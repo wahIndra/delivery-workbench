@@ -279,3 +279,8 @@ See [.env.example](.env.example) for all available variables.
 ---
 
 *Built with Java 21 · Spring Boot 3 · React 18 · PostgreSQL 15 · Docker Compose*
+
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
