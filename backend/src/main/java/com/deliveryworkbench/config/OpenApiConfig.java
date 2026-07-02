@@ -21,8 +21,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("IT Delivery Workbench API")
-                        .description("AI-assisted IT delivery governance platform. " +
-                                "AI is an assistant only — humans approve all decisions.")
+                        .description("API documentation for the IT Delivery Workbench MVP. AI-assisted IT delivery governance platform. AI is an assistant only — humans approve all decisions.")
                         .version("1.0.0")
                         .contact(new Contact()
                                 .name("Delivery Workbench Team")

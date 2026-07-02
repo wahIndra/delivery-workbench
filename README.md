@@ -1,267 +1,71 @@
 # IT Delivery Workbench
 
-An **AI-assisted IT delivery governance platform** that improves development delivery speed by standardising demand intake, reducing unclear requirements, tracking delivery stages, and measuring bottlenecks across the SDLC.
-
-> **AI is an assistant only.** Humans retain full accountability for all approvals, design, development, test sign-offs, and release decisions.
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Quick Start (Docker Compose)](#quick-start-docker-compose)
-- [Local Development](#local-development)
-- [Role Matrix](#role-matrix)
-- [API Documentation](#api-documentation)
-- [Business Rules](#business-rules)
-- [AI Guardrails](#ai-guardrails)
-- [Environment Variables](#environment-variables)
-- [Implementation Progress](#implementation-progress)
-
----
+An AI-assisted IT delivery governance platform designed to streamline and govern the end-to-end software delivery lifecycle.
 
 ## Overview
+The IT Delivery Workbench bridges the gap between Business, Analysis, QA, and Release Management by providing a single source of truth for Delivery Requests. It ensures strict governance (e.g., Definition of Ready, Release Readiness) while leveraging AI to accelerate drafting tasks like User Stories, Impact Analysis, and QA Scenarios.
 
-### Flow
+**Core Philosophy:** AI is an assistant, not an autonomous agent. A human must always review and approve AI outputs (BR-05). All AI generation is strictly audited.
 
-```
-Business Request
-  → AI-assisted clarification
-  → Requirement refinement
-  → Definition of Ready validation
-  → Impact analysis
-  → Delivery tracking
-  → QA preparation
-  → Release readiness
-  → Lead time dashboard
-```
+## Tech Stack
+- **Backend:** Java 21, Spring Boot 3.2, PostgreSQL, Flyway, Spring Data JPA
+- **Frontend:** React, Vite, React Router, Axios, Vanilla CSS
+- **AI Integration:** Mocked AI Service (Spring AI structure prepared for future phases)
 
-### Demo Users
-
-| Username | Role | Access |
-|----------|------|--------|
-| business.user | BUSINESS_USER | Create and submit requests, answer clarifications |
-| business.owner | BUSINESS_OWNER | Approve requirements, sign off UAT |
-| system.analyst | SYSTEM_ANALYST | Manage requirements, DoR, AI clarification |
-| principal.engineer | PRINCIPAL_ENGINEER | Impact analysis, solution design |
-| developer | DEVELOPER | Development status updates |
-| qa.user | QA | Test scenarios, SIT/UAT tracking |
-| release.manager | RELEASE_MANAGER | Release readiness, deployment gating |
-| management.viewer | MANAGEMENT_VIEWER | Read-only dashboard access |
-| admin | ADMIN | User and master data management |
-
-Default password for all demo users: `Password123!`
-
----
-
-## Architecture
-
+## Project Structure
 ```
 delivery-workbench/
-├── backend/          Java 21 + Spring Boot 3.x + PostgreSQL + Flyway
-├── frontend/         React 18 + Vite + Vanilla CSS
-├── docker-compose.yml
-├── .env.example
-└── README.md
+├── backend/               # Spring Boot Application
+│   ├── src/main/java      # Java source code
+│   └── src/main/resources # Application config & Flyway migrations
+├── frontend/              # React SPA
+│   ├── src/               # React components, pages, API utils
+│   └── vite.config.js     # Vite configuration (proxy to backend)
+└── docker-compose.yml     # PostgreSQL Database container
 ```
 
-### Backend Packages
+## Setup & Running Locally
 
-| Package | Responsibility |
-|---------|---------------|
-| controller | REST endpoints — validates DTOs, delegates to service |
-| service | Business logic, status gates, AI orchestration |
-| repository | Spring Data JPA interfaces |
-| entity | JPA entities (never returned directly from REST) |
-| dto | API request/response objects |
-| mapper | MapStruct entity ↔ DTO converters |
-| security | JWT filter, UserDetails, RBAC |
-| config | Spring beans, CORS, OpenAPI |
-| ai | AIService interface + MockAIService |
-| dashboard | Lead time and bottleneck metrics |
-| exception | Global exception handler |
-
----
-
-## Prerequisites
-
-- Java 21+
-- Maven 3.9+ (or use included `mvnw`)
-- Node.js 20+
-- Docker Desktop (for Docker Compose)
-- PostgreSQL 15 (if running locally without Docker)
-
----
-
-## Quick Start (Docker Compose)
-
+### 1. Database
+Ensure Docker is running, then start the PostgreSQL database:
 ```bash
-# 1. Clone the repository
-git clone <repo-url>
-cd delivery-workbench
-
-# 2. Create your environment file
-cp .env.example .env
-# Edit .env — change DB_PASSWORD and JWT_SECRET before any shared deployment
-
-# 3. Start all services
-docker compose up -d
-
-# 4. Check health
-curl http://localhost:8080/api/health
-
-# 5. Open the application
-# Frontend: http://localhost:5173
-# API Docs: http://localhost:8080/swagger-ui.html
+docker-compose up -d
 ```
+The database runs on `localhost:5432`. Flyway migrations run automatically when the backend starts.
 
-### Stopping
-
-```bash
-docker compose down
-# To also remove database volume:
-docker compose down -v
-```
-
----
-
-## Local Development
-
-### Backend
-
+### 2. Backend
+Requires Java 21 and Maven.
 ```bash
 cd backend
-
-# Start PostgreSQL via Docker (only the db service)
-docker compose -f ../docker-compose.yml up db -d
-
-# Run the backend
+mvn clean install
 mvn spring-boot:run
-
-# Run tests
-mvn test
 ```
+The backend API runs on `http://localhost:8080`.
+- **API Documentation (Swagger UI):** `http://localhost:8080/swagger-ui.html`
 
-### Frontend
-
+### 3. Frontend
+Requires Node.js (v18+).
 ```bash
 cd frontend
 npm install
 npm run dev
-# App: http://localhost:5173
 ```
+The frontend runs on `http://localhost:5173`.
 
----
+## Authentication (MVP Security Note)
+For this MVP, authentication is mocked (Assumption A-04). 
+When you visit the frontend login page, you can select from a dropdown of predefined users (e.g., Business Owner, System Analyst, Release Manager). This sets a simulated session role, allowing you to bypass a complex OAuth2 setup for demo purposes. Real JWT and Spring Security will be implemented in future production phases.
 
-## Role Matrix
-
-| Action | BU | BO | SA | PE | DEV | QA | RM | MV | ADMIN |
-|--------|----|----|----|----|-----|----|----|----|-------|
-| Create request | ✓ | | | | | | | | |
-| Submit request | ✓ | | | | | | | | |
-| Generate AI clarification | | | ✓ | | | | | | |
-| Answer clarification | ✓ | | | | | | | | |
-| Create/update requirement | | | ✓ | | | | | | |
-| Complete DoR checklist | | | ✓ | | | | | | |
-| Create impact analysis | | | | ✓ | | | | | |
-| Update delivery status | | | ✓ | ✓ | ✓ | ✓ | ✓ | | |
-| Generate QA scenarios | | | | | | ✓ | | | |
-| Complete release readiness | | | | | | | ✓ | | |
-| View dashboard | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Manage users | | | | | | | | | ✓ |
-
-BU=Business User, BO=Business Owner, SA=System Analyst, PE=Principal Engineer,
-DEV=Developer, QA=QA Engineer, RM=Release Manager, MV=Management Viewer
-
----
-
-## API Documentation
-
-Once running, visit: **http://localhost:8080/swagger-ui.html**
-
-OpenAPI JSON: **http://localhost:8080/api-docs**
-
-### Key Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /api/auth/login | Authenticate and receive JWT |
-| GET | /api/health | Health check (no auth) |
-| GET | /api/requests | List delivery requests |
-| POST | /api/requests | Create new delivery request |
-| POST | /api/requests/{id}/submit | Submit a draft request |
-| POST | /api/requests/{id}/status | Change status |
-| GET | /api/requests/{id}/history | Stage history |
-| POST | /api/requests/{id}/clarifications/ai-generate | AI clarification questions |
-| POST | /api/requests/{id}/requirements/ai-generate | AI user story + AC |
-| POST | /api/requests/{id}/impact/ai-generate | AI impact analysis draft |
-| POST | /api/requests/{id}/qa-scenarios/ai-generate | AI test scenarios |
-| POST | /api/requests/{id}/release-readiness/ai-generate | AI release checklist |
-| GET | /api/dashboard | Lead time and metrics |
-| GET | /api/ai-audit-logs | All AI audit logs |
-
----
-
-## Business Rules
-
-| Rule | Description |
-|------|-------------|
-| BR-01 | Request cannot move to READY_FOR_DEVELOPMENT unless DoR readyStatus == READY |
-| BR-02 | Request cannot move to READY_FOR_RELEASE unless ReleaseReadiness.readyForRelease == true |
-| BR-03 | Every AI output is saved to AIAuditLog before returning |
-| BR-04 | AI clarification questions are editable drafts — humans send to business |
-| BR-05 | AI never approves readiness, release, or requirement signoff |
-| BR-06 | All status changes recorded in DeliveryStageHistory |
-| BR-07 | MANAGEMENT_VIEWER has read-only access |
-| BR-08 | ADMIN manages users and master data |
-| BR-09 | businessOwner and itOwner required before READY_FOR_ANALYSIS |
-| BR-10 | UAT signoff required before READY_FOR_RELEASE |
-
----
-
-## AI Guardrails
-
-The AI integration strictly follows these non-negotiable rules:
-
-- ✅ AI **may** suggest clarification questions
-- ✅ AI **may** draft user stories and acceptance criteria
-- ✅ AI **may** draft impact analysis
-- ✅ AI **may** draft test scenarios
-- ✅ AI **may** draft release checklist
-- ❌ AI **must not** approve requirements
-- ❌ AI **must not** approve technical design
-- ❌ AI **must not** approve release readiness
-- ❌ AI **must not** change workflow status
-- ❌ AI **must not** merge code
-- ❌ AI **must not** deploy applications
-- ❌ AI **must not** access secrets or production credentials
-
----
-
-## Environment Variables
-
-See [.env.example](.env.example) for all available variables.
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| DB_NAME | PostgreSQL database name | deliveryworkbench |
-| DB_USERNAME | PostgreSQL username | dwuser |
-| DB_PASSWORD | PostgreSQL password | *required* |
-| JWT_SECRET | JWT signing secret (min 32 chars) | *required in prod* |
-| JWT_EXPIRATION_MS | Token expiry in milliseconds | 86400000 (24h) |
-| CORS_ALLOWED_ORIGINS | Comma-separated allowed origins | http://localhost:5173 |
-| VITE_API_BASE_URL | Frontend API base URL | http://localhost:8080 |
-
-> **Security**: Never commit `.env` to version control. Rotate `JWT_SECRET` and `DB_PASSWORD` before any shared deployment.
-
----
-
-
-*Built with Java 21 · Spring Boot 3 · React 18 · PostgreSQL 15 · Docker Compose*
-
+## Features
+- **Dashboard:** Lead time metrics and bottleneck tracking.
+- **Request Tracking:** Stateful workflow engine (`DRAFT` to `RELEASED`).
+- **Clarifications:** Q&A thread with AI generation capability.
+- **Requirement Refinement:** AI-assisted User Stories and Acceptance Criteria.
+- **Definition of Ready (DoR):** 12-point readiness gate (BR-01).
+- **Impact Analysis:** Cross-system impact drafts.
+- **QA Scenarios:** Test case management.
+- **Release Readiness:** Master release gate and checklist (BR-02, BR-10).
+- **AI Audit Log:** Immutable ledger of AI interactions (SG-05).
 
 ## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License. See [LICENSE](LICENSE) for details.
