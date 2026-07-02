@@ -258,25 +258,6 @@ See [.env.example](.env.example) for all available variables.
 
 ---
 
-## Implementation Progress
-
-| Step | Description | Status |
-|------|-------------|--------|
-| 1 | Project structure, Spring Boot skeleton, Docker Compose, README | ✅ Complete |
-| 2 | Core entities, enums, repositories, DTOs, mappers, Flyway migrations | ⬜ Pending |
-| 3 | DeliveryRequest APIs and workflow status transition service | ⬜ Pending |
-| 4 | Definition of Ready checklist and BR-01 gate | ⬜ Pending |
-| 5 | ClarificationQuestion APIs and MockAIService | ⬜ Pending |
-| 6 | Requirement APIs and AI-generated user story + AC | ⬜ Pending |
-| 7 | ImpactAnalysis APIs and AI-generated draft | ⬜ Pending |
-| 8 | QATestScenario APIs and AI-generated scenarios | ⬜ Pending |
-| 9 | ReleaseReadiness APIs and BR-02 / BR-10 gates | ⬜ Pending |
-| 10 | AIAuditLog and DeliveryStageHistory read-only APIs | ⬜ Pending |
-| 11 | Dashboard metrics API | ⬜ Pending |
-| 12 | React frontend — all 13 pages | ⬜ Pending |
-| 13 | Seed data, unit tests, final README | ⬜ Pending |
-
----
 
 *Built with Java 21 · Spring Boot 3 · React 18 · PostgreSQL 15 · Docker Compose*
 
