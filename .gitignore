@@ -1,0 +1,28 @@
+# Environment secrets — NEVER commit these
+.env
+*.env.local
+
+# Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/settings.json
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Implementation Plan
+preBuild/
+IMPLEMENTATION_PLAN.md
