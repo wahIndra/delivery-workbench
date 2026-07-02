@@ -3,6 +3,8 @@ package com.deliveryworkbench.service;
 import com.deliveryworkbench.entity.AIActionType;
 import com.deliveryworkbench.entity.AIAuditLog;
 import com.deliveryworkbench.entity.DeliveryRequest;
+import com.deliveryworkbench.dto.AIAuditLogResponse;
+import com.deliveryworkbench.mapper.AIAuditLogMapper;
 import com.deliveryworkbench.repository.AIAuditLogRepository;
 import com.deliveryworkbench.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage AI Audit Logs (BR-03, SG-05).
@@ -20,6 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class AIAuditLogService {
 
     private final AIAuditLogRepository auditLogRepository;
+    private final AIAuditLogMapper auditLogMapper;
+
+    @Transactional(readOnly = true)
+    public List<AIAuditLogResponse> getLogsByRequestId(Long requestId) {
+        return auditLogRepository.findByRequest_IdOrderByCreatedAtDesc(requestId)
+                .stream()
+                .map(auditLogMapper::toResponse)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Saves an AI action to the audit log.
