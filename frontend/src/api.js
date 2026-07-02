@@ -32,4 +32,9 @@ export const priorityScoreApi = {
   generateAIScore: (requestId) => api.post(`/requests/${requestId}/priority-score/generate-ai`),
 };
 
+export const slaApi = {
+  getAgingForRequest: (requestId) => api.get(`/requests/${requestId}/aging`),
+  getDashboardMetrics: () => api.get(`/dashboard/sla-metrics`)
+};
+
 export default api;

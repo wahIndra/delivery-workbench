@@ -45,7 +45,6 @@ delivery-workbench/
 │       ├── components/          # Layout, shared UI
 │       └── pages/               # 13 page components
 ├── docker-compose.yml           # DB + backend + frontend containers
-└── IMPROVEMENT_PLAN.md         # Expansion roadmap (Phases 1–15)
 ```
 
 ---

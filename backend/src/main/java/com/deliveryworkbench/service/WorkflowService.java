@@ -39,6 +39,7 @@ public class WorkflowService {
         validateTransition(request, oldStatus, newStatus);
 
         request.setStatus(newStatus);
+        request.setStatusEnteredAt(java.time.OffsetDateTime.now());
         DeliveryRequest updatedRequest = requestRepository.save(request);
 
         recordHistory(updatedRequest, oldStatus, newStatus, notes);

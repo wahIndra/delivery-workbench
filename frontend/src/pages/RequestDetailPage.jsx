@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import api from '../api';
+import api, { slaApi } from '../api';
+import SlaBadge from '../components/SlaBadge';
 
 export default function RequestDetailPage() {
   const { id } = useParams();
@@ -9,6 +10,7 @@ export default function RequestDetailPage() {
   const [request, setRequest] = useState(null);
   const [history, setHistory] = useState([]);
   const [priorityScore, setPriorityScore] = useState(null);
+  const [aging, setAging] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,14 +20,16 @@ export default function RequestDetailPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [reqRes, histRes, scoreRes] = await Promise.all([
+      const [reqRes, histRes, scoreRes, agingRes] = await Promise.all([
         api.get(`/requests/${id}`),
         api.get(`/requests/${id}/stage-history`),
-        api.get(`/requests/${id}/priority-score`).catch(() => ({ data: null }))
+        api.get(`/requests/${id}/priority-score`).catch(() => ({ data: null })),
+        slaApi.getAgingForRequest(id).catch(() => ({ data: null }))
       ]);
       setRequest(reqRes.data);
       setHistory(histRes.data);
       setPriorityScore(scoreRes.data);
+      if (agingRes.data) setAging(agingRes.data);
     } catch (err) {
       console.error('Failed to fetch request data', err);
     } finally {
@@ -86,6 +90,16 @@ export default function RequestDetailPage() {
               <div>
                 <div className="form-label">Priority</div>
                 <div>{priorityScore?.priorityRecommendation || 'PENDING'}</div>
+              </div>
+              <div>
+                <div className="form-label">Aging (Current Stage)</div>
+                <div>
+                  <span className="font-semibold">{aging ? `${aging.agingHours}h` : 'N/A'}</span>
+                  {aging && aging.slaHours && <span className="text-gray-500 text-sm ml-1">/ {aging.slaHours}h</span>}
+                  <div className="mt-1">
+                    <SlaBadge status={aging?.slaStatus} />
+                  </div>
+                </div>
               </div>
               <div>
                 <div className="form-label">Business Owner</div>

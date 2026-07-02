@@ -3,6 +3,7 @@ import api from '../api';
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
+  const [slaMetrics, setSlaMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -13,8 +14,14 @@ export default function DashboardPage() {
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/dashboard/metrics');
-      setMetrics(response.data);
+      const [dashRes, slaRes] = await Promise.all([
+        api.get('/dashboard/metrics'),
+        api.get('/dashboard/sla-metrics').catch(() => ({ data: null }))
+      ]);
+      setMetrics(dashRes.data);
+      if (slaRes.data) {
+        setSlaMetrics(slaRes.data);
+      }
       setError(null);
     } catch (err) {
       console.error('Error fetching dashboard metrics', err);
@@ -97,6 +104,41 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {slaMetrics && (
+        <>
+          <h2 className="mt-8 mb-4">SLA & Aging Management</h2>
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="card border-red-500">
+              <h3 className="text-red-700">SLA Breached ({slaMetrics.breachedRequests?.length || 0})</h3>
+              <div className="mt-4 flex flex-col gap-2">
+                {slaMetrics.breachedRequests?.slice(0, 5).map(r => (
+                  <div key={r.requestId} className="flex justify-between items-center pb-2 border-b">
+                    <span className="font-semibold">{r.requestCode}</span>
+                    <span className="text-sm text-gray-600 truncate max-w-xs">{r.title}</span>
+                    <span className="badge bg-red-100 text-red-800">{r.agingHours}h / {r.slaHours}h</span>
+                  </div>
+                ))}
+                {slaMetrics.breachedRequests?.length === 0 && <span className="text-gray-500">No breached requests!</span>}
+              </div>
+            </div>
+
+            <div className="card border-yellow-500">
+              <h3 className="text-yellow-700">SLA Warnings ({slaMetrics.warningRequests?.length || 0})</h3>
+              <div className="mt-4 flex flex-col gap-2">
+                {slaMetrics.warningRequests?.slice(0, 5).map(r => (
+                  <div key={r.requestId} className="flex justify-between items-center pb-2 border-b">
+                    <span className="font-semibold">{r.requestCode}</span>
+                    <span className="text-sm text-gray-600 truncate max-w-xs">{r.title}</span>
+                    <span className="badge bg-yellow-100 text-yellow-800">{r.agingHours}h / {r.slaHours}h</span>
+                  </div>
+                ))}
+                {slaMetrics.warningRequests?.length === 0 && <span className="text-gray-500">No requests in warning status.</span>}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

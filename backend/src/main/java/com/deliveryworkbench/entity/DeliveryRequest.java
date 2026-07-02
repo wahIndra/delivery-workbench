@@ -99,6 +99,9 @@ public class DeliveryRequest {
     @Builder.Default
     private RequestStatus status = RequestStatus.DRAFT;
 
+    @Column(name = "status_entered_at", nullable = false)
+    private OffsetDateTime statusEnteredAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -109,6 +112,9 @@ public class DeliveryRequest {
     protected void onCreate() {
         createdAt = OffsetDateTime.now();
         updatedAt = OffsetDateTime.now();
+        if (statusEnteredAt == null) {
+            statusEnteredAt = OffsetDateTime.now();
+        }
     }
 
     @PreUpdate
