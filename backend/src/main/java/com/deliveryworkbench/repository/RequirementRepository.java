@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface RequirementRepository extends JpaRepository<Requirement, Long> {
     List<Requirement> findByRequest_IdOrderByVersionDesc(Long requestId);
     Optional<Requirement> findTopByRequest_IdOrderByVersionDesc(Long requestId);
+    boolean existsByRequest_Id(Long requestId);
 }

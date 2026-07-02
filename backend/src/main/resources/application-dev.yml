@@ -1,0 +1,17 @@
+# application-dev.yml
+# Activated when spring.profiles.active=dev (local development)
+# MockAuthFilter is active under this profile.
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/deliveryworkbench}
+    username: ${DB_USERNAME:dwuser}
+    password: ${DB_PASSWORD:dwpassword}
+
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    com.deliveryworkbench: DEBUG
+    com.deliveryworkbench.security: DEBUG

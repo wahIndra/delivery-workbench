@@ -33,12 +33,28 @@ public class DashboardService {
         Map<String, Long> statusCount = allRequests.stream()
                 .collect(Collectors.groupingBy(r -> r.getStatus().name(), Collectors.counting()));
 
-        // 8. Stuck requests (> 14 days in same status)
+        // Group history by request (used in multiple calculations below)
+        Map<Long, List<DeliveryStageHistory>> historyByRequest = allHistory.stream()
+                .collect(Collectors.groupingBy(h -> h.getRequest().getId()));
+
+        // 8. Stuck requests: requests that entered their current status > 14 days ago
+        // Uses DeliveryStageHistory for accurate timing (not updatedAt which changes on any field edit)
         Map<String, Long> stuckRequests = new HashMap<>();
         OffsetDateTime fourteenDaysAgo = OffsetDateTime.now().minusDays(14);
         for (DeliveryRequest req : allRequests) {
-            if (req.getUpdatedAt().isBefore(fourteenDaysAgo) && req.getStatus() != RequestStatus.RELEASED && req.getStatus() != RequestStatus.CANCELLED) {
-                stuckRequests.put(req.getStatus().name(), stuckRequests.getOrDefault(req.getStatus().name(), 0L) + 1);
+            if (req.getStatus() == RequestStatus.RELEASED || req.getStatus() == RequestStatus.CANCELLED) {
+                continue;
+            }
+            // Find the most recent entry into the current status from history
+            List<DeliveryStageHistory> reqHistory = historyByRequest.getOrDefault(req.getId(), List.of());
+            OffsetDateTime enteredCurrentStatus = reqHistory.stream()
+                    .filter(h -> h.getToStatus() == req.getStatus())
+                    .map(DeliveryStageHistory::getChangedAt)
+                    .max(OffsetDateTime::compareTo)
+                    .orElse(req.getCreatedAt());
+            if (enteredCurrentStatus.isBefore(fourteenDaysAgo)) {
+                String statusName = req.getStatus().name();
+                stuckRequests.merge(statusName, 1L, Long::sum);
             }
         }
 
@@ -53,10 +69,7 @@ public class DashboardService {
                 .filter(h -> h.getToStatus() == RequestStatus.NEED_CLARIFICATION)
                 .count();
 
-        // Averages (mocked or simple calc for MVP)
-        // Group history by request
-        Map<Long, List<DeliveryStageHistory>> historyByRequest = allHistory.stream()
-                .collect(Collectors.groupingBy(h -> h.getRequest().getId()));
+        // Averages (using pre-computed historyByRequest map)
 
         double avgReqToReady = calculateAverageDuration(historyByRequest, RequestStatus.DRAFT, RequestStatus.READY_FOR_ANALYSIS);
         double avgReadyToDev = calculateAverageDuration(historyByRequest, RequestStatus.READY_FOR_ANALYSIS, RequestStatus.IN_DEVELOPMENT);
