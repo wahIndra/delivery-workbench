@@ -11,6 +11,7 @@ import com.deliveryworkbench.entity.DeliveryStageHistory;
 import com.deliveryworkbench.entity.ImpactAnalysis;
 import com.deliveryworkbench.entity.ReadyStatus;
 import com.deliveryworkbench.entity.ReleaseReadiness;
+import com.deliveryworkbench.entity.RequestPriorityScore;
 import com.deliveryworkbench.entity.Requirement;
 import com.deliveryworkbench.entity.RequestStatus;
 import com.deliveryworkbench.exception.BusinessRuleViolationException;
@@ -23,6 +24,7 @@ import com.deliveryworkbench.repository.DeliveryRequestRepository;
 import com.deliveryworkbench.repository.DeliveryStageHistoryRepository;
 import com.deliveryworkbench.repository.ImpactAnalysisRepository;
 import com.deliveryworkbench.repository.ReleaseReadinessRepository;
+import com.deliveryworkbench.repository.RequestPriorityScoreRepository;
 import com.deliveryworkbench.repository.RequirementRepository;
 import com.deliveryworkbench.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class DeliveryRequestService {
     private final ImpactAnalysisRepository impactAnalysisRepository;
     private final DefinitionOfReadyChecklistRepository dorRepository;
     private final ReleaseReadinessRepository releaseReadinessRepository;
+    private final RequestPriorityScoreRepository priorityScoreRepository;
     private final DeliveryRequestMapper requestMapper;
     private final DeliveryStageHistoryMapper historyMapper;
     private final WorkflowService workflowService;
@@ -127,8 +130,8 @@ public class DeliveryRequestService {
     }
 
     /**
-     * Creates default stubs for Requirement, ImpactAnalysis, DefinitionOfReady, and ReleaseReadiness
-     * so downstream pages load immediately without 404 on a brand-new request.
+     * Creates default stubs for Requirement, ImpactAnalysis, DefinitionOfReady, ReleaseReadiness,
+     * and RequestPriorityScore so downstream pages load immediately without 404 on a brand-new request.
      */
     private void createSubordinateStubs(DeliveryRequest request) {
         if (!requirementRepository.existsByRequest_Id(request.getId())) {
@@ -143,6 +146,9 @@ public class DeliveryRequestService {
         }
         if (!releaseReadinessRepository.existsByRequest_Id(request.getId())) {
             releaseReadinessRepository.save(ReleaseReadiness.builder().request(request).build());
+        }
+        if (!priorityScoreRepository.existsByRequest_Id(request.getId())) {
+            priorityScoreRepository.save(RequestPriorityScore.builder().request(request).build());
         }
     }
 

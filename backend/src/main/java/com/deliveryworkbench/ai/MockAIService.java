@@ -255,4 +255,47 @@ public class MockAIService implements AIService {
             default -> "Consult Release Manager for deployment window recommendation.";
         };
     }
+
+    @Override
+    public String generatePriorityRecommendation(
+            Long requestId,
+            String requestTitle,
+            String businessProblem,
+            String expectedOutcome) {
+
+        log.info("[MockAI] generatePriorityRecommendation for requestId={}", requestId);
+
+        // Simple mock logic based on keywords
+        String lowerContext = (businessProblem + " " + expectedOutcome).toLowerCase();
+        String recommendation = "MEDIUM";
+        String notes = "Standard priority based on typical request parameters.";
+
+        if (lowerContext.contains("urgent") || lowerContext.contains("critical") || lowerContext.contains("outage")) {
+            recommendation = "CRITICAL";
+            notes = "Identified critical keywords (urgent, critical, outage). Immediate attention recommended.";
+        } else if (lowerContext.contains("regulatory") || lowerContext.contains("compliance") || lowerContext.contains("deadline")) {
+            recommendation = "HIGH";
+            notes = "Identified time-sensitive or compliance keywords (regulatory, compliance, deadline). High priority recommended.";
+        } else if (lowerContext.contains("minor") || lowerContext.contains("nice to have") || lowerContext.contains("cosmetic")) {
+            recommendation = "LOW";
+            notes = "Identified low impact keywords (minor, cosmetic, nice to have).";
+        }
+
+        return """
+                AI-Generated Priority Recommendation
+                =====================================================
+                
+                RECOMMENDED PRIORITY: %s
+                
+                ANALYSIS NOTES:
+                %s
+                
+                CONTEXT ANALYZED:
+                - Title: %s
+                - Problem: %s
+                - Expected Outcome: %s
+                
+                Note: This is an AI-generated draft. A human must review and approve the final priority score (BR-05).
+                """.formatted(recommendation, notes, requestTitle, businessProblem, expectedOutcome);
+    }
 }

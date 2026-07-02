@@ -11,6 +11,7 @@ import DefinitionOfReadyPage from './pages/DefinitionOfReadyPage';
 import ImpactAnalysisPage from './pages/ImpactAnalysisPage';
 import QATestScenarioPage from './pages/QATestScenarioPage';
 import ReleaseReadinessPage from './pages/ReleaseReadinessPage';
+import PriorityScoringPage from './pages/PriorityScoringPage';
 import AIAuditLogPage from './pages/AIAuditLogPage';
 import AdminUserPage from './pages/AdminUserPage';
 
@@ -28,6 +29,7 @@ function App() {
         <Route path="/requests/:id" element={<Layout><RequestDetailPage /></Layout>} />
         
         {/* Phase 2 Routes */}
+        <Route path="/requests/:id/priority-score" element={<Layout><PriorityScoringPage /></Layout>} />
         <Route path="/requests/:id/clarifications" element={<Layout><ClarificationPage /></Layout>} />
         <Route path="/requests/:id/requirements" element={<Layout><RequirementRefinementPage /></Layout>} />
         <Route path="/requests/:id/dor" element={<Layout><DefinitionOfReadyPage /></Layout>} />

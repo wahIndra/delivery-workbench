@@ -96,4 +96,20 @@ public interface AIService {
             String riskLevel,
             int qaScenarioCount
     );
+
+    /**
+     * Generate priority recommendation based on request attributes.
+     *
+     * @param requestId        the delivery request id
+     * @param requestTitle     the request title
+     * @param businessProblem  the business problem
+     * @param expectedOutcome  the expected outcome
+     * @return AI-generated priority recommendation as formatted text
+     */
+    String generatePriorityRecommendation(
+            Long requestId,
+            String requestTitle,
+            String businessProblem,
+            String expectedOutcome
+    );
 }

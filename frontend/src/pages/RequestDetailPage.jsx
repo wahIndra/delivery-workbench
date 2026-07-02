@@ -8,6 +8,7 @@ export default function RequestDetailPage() {
   const navigate = useNavigate();
   const [request, setRequest] = useState(null);
   const [history, setHistory] = useState([]);
+  const [priorityScore, setPriorityScore] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,12 +18,14 @@ export default function RequestDetailPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [reqRes, histRes] = await Promise.all([
+      const [reqRes, histRes, scoreRes] = await Promise.all([
         api.get(`/requests/${id}`),
-        api.get(`/requests/${id}/stage-history`)
+        api.get(`/requests/${id}/stage-history`),
+        api.get(`/requests/${id}/priority-score`).catch(() => ({ data: null }))
       ]);
       setRequest(reqRes.data);
       setHistory(histRes.data);
+      setPriorityScore(scoreRes.data);
     } catch (err) {
       console.error('Failed to fetch request data', err);
     } finally {
@@ -82,7 +85,7 @@ export default function RequestDetailPage() {
               </div>
               <div>
                 <div className="form-label">Priority</div>
-                <div>{request.priority}</div>
+                <div>{priorityScore?.priorityRecommendation || 'PENDING'}</div>
               </div>
               <div>
                 <div className="form-label">Business Owner</div>
@@ -106,6 +109,7 @@ export default function RequestDetailPage() {
 
           <h3 className="mb-4 mt-8">Delivery Modules</h3>
           <div className="grid grid-cols-2 gap-4">
+            <ModuleCard title="Priority Scoring" path={`/requests/${id}/priority-score`} desc="Evaluate business value and technical risk." />
             <ModuleCard title="Clarification Questions" path={`/requests/${id}/clarifications`} desc="Ask and answer questions to clarify the request." />
             <ModuleCard title="Requirement Refinement" path={`/requests/${id}/requirements`} desc="Define scope, user story, and acceptance criteria." />
             <ModuleCard title="Definition of Ready" path={`/requests/${id}/dor`} desc="Complete the 12-point readiness checklist." />

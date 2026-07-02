@@ -26,4 +26,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export const priorityScoreApi = {
+  getScore: (requestId) => api.get(`/requests/${requestId}/priority-score`),
+  updateScore: (requestId, data) => api.put(`/requests/${requestId}/priority-score`, data),
+  generateAIScore: (requestId) => api.post(`/requests/${requestId}/priority-score/generate-ai`),
+};
+
 export default api;
