@@ -35,6 +35,7 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-deliveryworkbench}
       DB_USERNAME: ${DB_USERNAME:-dwuser}
       DB_PASSWORD: ${DB_PASSWORD:-dwpassword}
+      SPRING_PROFILES_ACTIVE: dev
       JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production-minimum-32-chars}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       SERVER_PORT: 8080
@@ -45,7 +46,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -62,7 +63,10 @@ services:
       dockerfile: Dockerfile
     container_name: dw-frontend
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8080}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     depends_on:

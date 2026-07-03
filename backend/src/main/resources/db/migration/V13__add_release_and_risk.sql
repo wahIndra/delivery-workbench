@@ -41,5 +41,5 @@ CREATE TABLE risk_registers (
     CONSTRAINT fk_risk_register_request FOREIGN KEY (request_id) REFERENCES delivery_requests(id)
 );
 
-CREATE INDEX idx_rr_request_id ON risk_registers(request_id);
-CREATE INDEX idx_rr_status ON risk_registers(status);
+CREATE INDEX idx_risk_request_id ON risk_registers(request_id);
+CREATE INDEX idx_risk_status ON risk_registers(status);

@@ -1,20 +1,17 @@
 # ─────────────────────────────────────────────────────────────
 # Stage 1: Build
 # ─────────────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# Copy Maven wrapper and POM first for dependency caching
-COPY mvnw .
-COPY .mvn .mvn
+# Copy POM and download dependencies first for caching
 COPY pom.xml .
-
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
 # Copy source and build
 COPY src src
-RUN ./mvnw package -DskipTests -B
+RUN mvn package -DskipTests -B
 
 # ─────────────────────────────────────────────────────────────
 # Stage 2: Runtime
@@ -37,5 +34,4 @@ EXPOSE 8080
 ENTRYPOINT ["java", \
   "-XX:+UseContainerSupport", \
   "-XX:MaxRAMPercentage=75.0", \
-  "-Dspring.profiles.active=prod", \
   "-jar", "app.jar"]
