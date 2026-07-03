@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import api, { slaApi, bottleneckApi, nextBestActionApi } from '../api';
 import SlaBadge from '../components/SlaBadge';
 import NextBestActionCard from '../components/NextBestActionCard';
+import ReleaseScheduleSection from '../components/ReleaseScheduleSection';
 
 export default function RequestDetailPage() {
   const { id } = useParams();
@@ -181,7 +182,10 @@ export default function RequestDetailPage() {
             <ModuleCard title="Decision Log" path={`/requests/${id}/decision-logs`} desc="Record key project decisions." />
             <ModuleCard title="Evidence & Attachments" path={`/requests/${id}/attachments`} desc="Upload and manage files." />
             <ModuleCard title="Approval Center" path={`/requests/${id}/approvals`} desc="Manage required sign-offs and approvals." />
+            <ModuleCard title="Risk Register" path={`/requests/${id}/risks`} desc="Track risks and manage mitigations." />
           </div>
+          
+          <ReleaseScheduleSection requestId={id} />
         </div>
 
         {/* Right Column: Timeline & Actions */}

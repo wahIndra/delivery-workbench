@@ -17,6 +17,7 @@ export default function Layout({ children }) {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Requests', path: '/requests' },
+    { name: 'Release Calendar', path: '/release-calendar' },
     { name: 'AI Audit Logs', path: '/ai-audit-logs' },
     { name: 'Admin', path: '/admin/users' },
   ];

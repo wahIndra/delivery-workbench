@@ -125,4 +125,13 @@ public interface AIService {
             String requestedBy);
 
     MeetingNoteSummary summarizeMeetingNotes(String rawNotes);
+
+    /**
+     * Generates risk suggestions based on the request context.
+     */
+    java.util.List<RiskSuggestionDto> generateRiskSuggestions(
+            Long requestId,
+            String requestTitle,
+            String businessProblem
+    );
 }

@@ -362,11 +362,32 @@ public class MockAIService implements AIService {
                     .build();
         }
 
-        // Extremely simple deterministic summarization for mock purposes
         return MeetingNoteSummary.builder()
-                .discussionSummary("The team discussed the requirements and technical details based on the provided notes. Key points were reviewed to ensure alignment on the delivery approach.")
-                .decisions("- Approved the proposed scope.\n- Agreed to proceed with the current technical architecture.")
-                .actionItems("- Update the Definition of Ready.\n- Follow up with the IT Owner for the API specification.")
+                .discussionSummary("The team discussed the requirements and agreed on the initial scope. Several technical challenges were raised regarding integration.")
+                .decisions("- Agreed to proceed with the proposed architecture.\n- Decided to use PostgreSQL for the new microservice.")
+                .actionItems("- John to create the database schema by Friday.\n- Jane to review the API contract with the frontend team.")
                 .build();
+    }
+
+    @Override
+    public java.util.List<RiskSuggestionDto> generateRiskSuggestions(Long requestId, String requestTitle, String businessProblem) {
+        log.info("Mock AI: Generating risk suggestions for Request {}", requestId);
+        
+        return java.util.List.of(
+            RiskSuggestionDto.builder()
+                .riskTitle("Potential Integration Delay")
+                .riskDescription("The required legacy API might not support the new data format, leading to rework.")
+                .riskCategory("INTEGRATION")
+                .probability("MEDIUM")
+                .impact("HIGH")
+                .build(),
+            RiskSuggestionDto.builder()
+                .riskTitle("Resource Bottleneck in QA")
+                .riskDescription("Only one QA engineer is assigned, which may delay the UAT phase.")
+                .riskCategory("OPERATIONAL")
+                .probability("HIGH")
+                .impact("MEDIUM")
+                .build()
+        );
     }
 }

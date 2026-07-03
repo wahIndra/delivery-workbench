@@ -19,6 +19,8 @@ import AttachmentsPage from './pages/AttachmentsPage';
 import AdminUserPage from './pages/AdminUserPage';
 import ApprovalPage from './pages/ApprovalPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ReleaseCalendarPage from './pages/ReleaseCalendarPage';
+import RiskRegisterPage from './pages/RiskRegisterPage';
 
 function App() {
   return (
@@ -54,6 +56,10 @@ function App() {
         
         {/* Phase 10 Routes */}
         <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
+        
+        {/* Phase 12 & 13 Routes */}
+        <Route path="/release-calendar" element={<Layout><ReleaseCalendarPage /></Layout>} />
+        <Route path="/requests/:id/risks" element={<Layout><RiskRegisterPage /></Layout>} />
         
         <Route path="*" element={<Layout><div className="card text-center p-8"><h2>404 — Page Not Found</h2></div></Layout>} />
       </Routes>
