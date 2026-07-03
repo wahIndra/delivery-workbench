@@ -52,6 +52,7 @@ public class DeliveryRequestService {
     private final DeliveryRequestMapper requestMapper;
     private final DeliveryStageHistoryMapper historyMapper;
     private final WorkflowService workflowService;
+    private final com.deliveryworkbench.integration.TicketingIntegrationService ticketingIntegrationService;
 
     @Transactional(readOnly = true)
     public Page<DeliveryRequestResponse> searchRequests(RequestStatus status, String keyword, Pageable pageable) {
@@ -106,6 +107,9 @@ public class DeliveryRequestService {
 
         // Auto-create subordinate stubs so downstream pages don't 404 on a fresh request
         createSubordinateStubs(request);
+        
+        // Mock Integration: Simulate creating a ticket in Jira/ServiceNow
+        ticketingIntegrationService.createTicket(request);
 
         return requestMapper.toResponse(request);
     }
