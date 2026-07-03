@@ -38,4 +38,22 @@ public class DashboardMetricsResponse {
     
     // 10. Rework count (total transitions to NEED_CLARIFICATION)
     private Long totalReworkCount;
+
+    // 11. Average lead time by month (e.g. "2024-01" -> 15.5)
+    private Map<String, Double> avgLeadTimeByMonth;
+
+    // 12. Requests by Business Owner
+    private Map<String, Long> requestsByBusinessOwner;
+
+    // 13. Requests by IT Owner
+    private Map<String, Long> requestsByItOwner;
+
+    // 14. Requests by Priority
+    private Map<String, Long> requestsByPriority;
+
+    // 15. Recent releases
+    private java.util.List<java.util.Map<String, Object>> recentReleases;
+
+    // 16. Upcoming releases (candidates)
+    private java.util.List<java.util.Map<String, Object>> upcomingReleases;
 }

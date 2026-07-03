@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
+  LineChart, Line, PieChart, Pie, Cell 
+} from 'recharts';
+import dayjs from 'dayjs';
+import { Link } from 'react-router-dom';
+
+const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
@@ -40,131 +48,232 @@ export default function DashboardPage() {
   if (error) return <div className="card" style={{ borderColor: 'var(--danger-600)' }}><h3 style={{ color: 'var(--danger-600)' }}>Error</h3><p>{error}</p></div>;
   if (!metrics) return null;
 
+  // Format Data for Charts
+  const statusData = Object.keys(metrics.totalRequestsByStatus || {}).map(status => ({
+    name: status,
+    value: metrics.totalRequestsByStatus[status]
+  }));
+
+  const leadTimeData = Object.keys(metrics.avgLeadTimeByMonth || {}).sort().map(month => ({
+    name: month,
+    days: metrics.avgLeadTimeByMonth[month]
+  }));
+
+  const bizOwnerData = Object.keys(metrics.requestsByBusinessOwner || {}).map(owner => ({
+    name: owner,
+    count: metrics.requestsByBusinessOwner[owner]
+  }));
+
+  const itOwnerData = Object.keys(metrics.requestsByItOwner || {}).map(owner => ({
+    name: owner,
+    count: metrics.requestsByItOwner[owner]
+  }));
+
+  const priorityData = Object.keys(metrics.requestsByPriority || {}).map((pri, index) => ({
+    name: pri,
+    value: metrics.requestsByPriority[pri],
+    color: COLORS[index % COLORS.length]
+  }));
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1>Lead Time Dashboard</h1>
-        <button onClick={fetchMetrics} className="btn btn-secondary">Refresh</button>
+    <div className="max-w-7xl mx-auto space-y-8 pb-12">
+      <div className="flex items-center justify-between">
+        <h1 className="m-0 text-gray-800">Advanced Dashboard</h1>
+        <div className="flex gap-4">
+          <button onClick={fetchMetrics} className="btn btn-secondary">Refresh</button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      {/* KPI Row */}
+      <div className="grid grid-cols-4 gap-4">
         <MetricCard title="Total Aging (>30d)" value={metrics.totalAgingRequests} color="var(--danger-600)" />
         <MetricCard title="Total Reworks" value={metrics.totalReworkCount} color="var(--warning-600)" />
         <MetricCard title="Avg Dev Cycle" value={`${metrics.avgDevCycleDays} days`} color="var(--primary-600)" />
         <MetricCard title="Avg Request to Ready" value={`${metrics.avgRequestToReadyDays} days`} color="var(--secondary-600)" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="card">
-          <h3>Requests by Status</h3>
-          <div className="mt-4">
-            {Object.keys(metrics.totalRequestsByStatus || {}).length === 0 ? (
-              <p className="text-muted">No active requests.</p>
-            ) : (
-              Object.entries(metrics.totalRequestsByStatus).map(([status, count]) => (
-                <div key={status} className="flex justify-between items-center mb-2 pb-2" style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <span className="badge badge-gray">{status}</span>
-                  <span style={{ fontWeight: 600 }}>{count}</span>
-                </div>
-              ))
-            )}
-          </div>
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="card shadow-sm h-80">
+          <h3 className="mb-4 text-gray-700">Delivery Funnel (By Status)</h3>
+          {statusData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="85%">
+              <BarChart data={statusData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={120} tick={{fontSize: 11}} />
+                <RechartsTooltip cursor={{fill: 'transparent'}} />
+                <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="text-gray-400 mt-8 text-center">No active requests.</p>}
         </div>
 
-        <div className="card">
-          <h3>Stuck Requests (>14 Days)</h3>
-          <div className="mt-4">
-            {Object.keys(metrics.stuckRequestsByStage || {}).length === 0 ? (
-              <p className="text-muted" style={{ color: 'var(--success-600)' }}>Great! No requests are stuck.</p>
-            ) : (
-              Object.entries(metrics.stuckRequestsByStage).map(([status, count]) => (
-                <div key={status} className="flex justify-between items-center mb-2 pb-2" style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <span className="badge badge-yellow">{status}</span>
-                  <span style={{ fontWeight: 600, color: 'var(--danger-600)' }}>{count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h3>Average Lead Times</h3>
-        <div className="grid grid-cols-4 gap-4 mt-4">
-          <div className="p-4" style={{ backgroundColor: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ready to Dev Start</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{metrics.avgReadyToDevStartDays} days</div>
-          </div>
-          <div className="p-4" style={{ backgroundColor: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>SIT Duration</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{metrics.avgSitDays} days</div>
-          </div>
-          <div className="p-4" style={{ backgroundColor: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>UAT Duration</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{metrics.avgUatDays} days</div>
-          </div>
-          <div className="p-4" style={{ backgroundColor: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>UAT Signoff to Release</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{metrics.avgUatToReleaseDays} days</div>
-          </div>
+        <div className="card shadow-sm h-80">
+          <h3 className="mb-4 text-gray-700">Lead Time Trend (Monthly)</h3>
+          {leadTimeData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="85%">
+              <LineChart data={leadTimeData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{fontSize: 12}} />
+                <YAxis tick={{fontSize: 12}} />
+                <RechartsTooltip />
+                <Line type="monotone" dataKey="days" stroke="#10b981" strokeWidth={3} dot={{r: 4}} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <p className="text-gray-400 mt-8 text-center">No released requests yet.</p>}
         </div>
       </div>
 
-      {slaMetrics && (
-        <>
-          <h2 className="mt-8 mb-4">SLA & Aging Management</h2>
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="card border-red-500">
-              <h3 className="text-red-700">SLA Breached ({slaMetrics.breachedRequests?.length || 0})</h3>
-              <div className="mt-4 flex flex-col gap-2">
-                {slaMetrics.breachedRequests?.slice(0, 5).map(r => (
-                  <div key={r.requestId} className="flex justify-between items-center pb-2 border-b">
-                    <span className="font-semibold">{r.requestCode}</span>
-                    <span className="text-sm text-gray-600 truncate max-w-xs">{r.title}</span>
-                    <span className="badge bg-red-100 text-red-800">{r.agingHours}h / {r.slaHours}h</span>
-                  </div>
-                ))}
-                {slaMetrics.breachedRequests?.length === 0 && <span className="text-gray-500">No breached requests!</span>}
-              </div>
-            </div>
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="card shadow-sm h-72">
+          <h3 className="mb-4 text-gray-700">Business Owner Workload</h3>
+          {bizOwnerData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="85%">
+              <BarChart data={bizOwnerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{fontSize: 10}} />
+                <YAxis />
+                <RechartsTooltip />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="text-gray-400 mt-8 text-center">No assignments.</p>}
+        </div>
 
-            <div className="card border-yellow-500">
-              <h3 className="text-yellow-700">SLA Warnings ({slaMetrics.warningRequests?.length || 0})</h3>
-              <div className="mt-4 flex flex-col gap-2">
-                {slaMetrics.warningRequests?.slice(0, 5).map(r => (
-                  <div key={r.requestId} className="flex justify-between items-center pb-2 border-b">
-                    <span className="font-semibold">{r.requestCode}</span>
-                    <span className="text-sm text-gray-600 truncate max-w-xs">{r.title}</span>
-                    <span className="badge bg-yellow-100 text-yellow-800">{r.agingHours}h / {r.slaHours}h</span>
-                  </div>
-                ))}
-                {slaMetrics.warningRequests?.length === 0 && <span className="text-gray-500">No requests in warning status.</span>}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+        <div className="card shadow-sm h-72">
+          <h3 className="mb-4 text-gray-700">IT Owner Workload</h3>
+          {itOwnerData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="85%">
+              <BarChart data={itOwnerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{fontSize: 10}} />
+                <YAxis />
+                <RechartsTooltip />
+                <Bar dataKey="count" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="text-gray-400 mt-8 text-center">No assignments.</p>}
+        </div>
 
-      {activeBottlenecks && activeBottlenecks.length > 0 && (
-        <>
-          <h2 className="mt-8 mb-4">Active System Bottlenecks</h2>
-          <div className="card border-orange-500">
-            <h3 className="text-orange-700">Top Pending Interventions ({activeBottlenecks.length})</h3>
-            <div className="mt-4 flex flex-col gap-2">
-              {activeBottlenecks.slice(0, 5).map(b => (
-                <div key={b.id} className="flex justify-between items-center pb-2 border-b">
-                  <div className="flex gap-4">
-                    <span className={`badge ${b.severity === 'CRITICAL' ? 'bg-red-200 text-red-900' : 'bg-orange-100 text-orange-800'}`}>{b.severity}</span>
-                    <span className="font-semibold">{b.findingType}</span>
+        <div className="card shadow-sm h-72">
+          <h3 className="mb-4 text-gray-700">Priority Distribution</h3>
+          {priorityData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="85%">
+              <PieChart>
+                <Pie data={priorityData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {priorityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip />
+                <Legend iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : <p className="text-gray-400 mt-8 text-center">No data.</p>}
+        </div>
+      </div>
+
+      {/* Actionable Tables Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="card border-red-500 shadow-sm flex flex-col h-80">
+          <h3 className="text-red-700 mb-4 sticky top-0 bg-white">SLA Breached ({slaMetrics?.breachedRequests?.length || 0})</h3>
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div className="flex flex-col gap-2">
+              {slaMetrics?.breachedRequests?.map(r => (
+                <div key={r.requestId} className="flex justify-between items-center pb-2 border-b">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gray-800">{r.requestCode}</span>
+                    <span className="text-xs text-gray-500 truncate max-w-[200px]">{r.title}</span>
                   </div>
-                  <span className="text-sm text-gray-600 truncate max-w-md">{b.description}</span>
-                  <a href={`/requests/${b.requestId}`} className="text-sm text-primary-600 hover:underline">View Request</a>
+                  <div className="flex items-center gap-2">
+                    <span className="badge bg-red-100 text-red-800 font-mono text-xs">{r.agingHours}h / {r.slaHours}h</span>
+                    <Link to={`/requests/${r.requestId}`} className="text-xs text-indigo-600 hover:underline">View</Link>
+                  </div>
                 </div>
               ))}
+              {(!slaMetrics?.breachedRequests || slaMetrics.breachedRequests.length === 0) && <span className="text-gray-500 mt-4">No breached requests! 🎉</span>}
             </div>
           </div>
-        </>
-      )}
+        </div>
+
+        <div className="card border-orange-500 shadow-sm flex flex-col h-80">
+          <h3 className="text-orange-700 mb-4 sticky top-0 bg-white">Top Interventions Needed ({activeBottlenecks?.length || 0})</h3>
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div className="flex flex-col gap-2">
+              {activeBottlenecks?.map(b => (
+                <div key={b.id} className="flex justify-between items-center pb-2 border-b">
+                  <div className="flex flex-col gap-1 w-full mr-2">
+                    <div className="flex gap-2 items-center">
+                      <span className={`badge text-[10px] ${b.severity === 'CRITICAL' ? 'bg-red-200 text-red-900' : 'bg-orange-100 text-orange-800'}`}>{b.severity}</span>
+                      <span className="font-semibold text-gray-800 text-sm">{b.findingType}</span>
+                    </div>
+                    <span className="text-xs text-gray-600 truncate max-w-[280px]">{b.description}</span>
+                  </div>
+                  <Link to={`/requests/${b.requestId}`} className="text-xs text-indigo-600 hover:underline whitespace-nowrap">Resolve</Link>
+                </div>
+              ))}
+              {(!activeBottlenecks || activeBottlenecks.length === 0) && <span className="text-gray-500 mt-4">No active bottlenecks!</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Releases Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="card shadow-sm h-64 flex flex-col">
+          <h3 className="text-gray-700 mb-4 sticky top-0 bg-white">Recent Releases (Last 5)</h3>
+          <div className="flex-1 overflow-y-auto">
+            {metrics.recentReleases?.length > 0 ? (
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-gray-500 border-b">
+                    <th className="pb-2 font-medium">Request</th>
+                    <th className="pb-2 font-medium">Title</th>
+                    <th className="pb-2 font-medium text-right">Released Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.recentReleases.map(r => (
+                    <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="py-2"><Link to={`/requests/${r.id}`} className="text-indigo-600 hover:underline">{r.requestCode}</Link></td>
+                      <td className="py-2 text-gray-600 truncate max-w-[150px]">{r.title}</td>
+                      <td className="py-2 text-right text-gray-500">{dayjs(r.releasedAt).format('MMM D, YYYY')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p className="text-gray-400 mt-4">No recent releases.</p>}
+          </div>
+        </div>
+
+        <div className="card shadow-sm h-64 flex flex-col">
+          <h3 className="text-gray-700 mb-4 sticky top-0 bg-white">Upcoming Releases (Candidates)</h3>
+          <div className="flex-1 overflow-y-auto">
+            {metrics.upcomingReleases?.length > 0 ? (
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-gray-500 border-b">
+                    <th className="pb-2 font-medium">Request</th>
+                    <th className="pb-2 font-medium">Title</th>
+                    <th className="pb-2 font-medium text-right">Ready Since</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.upcomingReleases.map(r => (
+                    <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="py-2"><Link to={`/requests/${r.id}`} className="text-indigo-600 hover:underline">{r.requestCode}</Link></td>
+                      <td className="py-2 text-gray-600 truncate max-w-[150px]">{r.title}</td>
+                      <td className="py-2 text-right text-gray-500">{dayjs(r.updatedAt).format('MMM D, YYYY')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p className="text-gray-400 mt-4">No upcoming candidates.</p>}
+          </div>
+        </div>
+      </div>
 
     </div>
   );
@@ -172,9 +281,9 @@ export default function DashboardPage() {
 
 function MetricCard({ title, value, color }) {
   return (
-    <div className="card" style={{ borderTop: `4px solid ${color}`, marginBottom: 0 }}>
-      <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>{title}</div>
-      <div style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.5rem', color: 'var(--text-primary)' }}>{value}</div>
+    <div className="card shadow-sm relative overflow-hidden h-28 flex flex-col justify-center" style={{ borderTop: `4px solid ${color}`, marginBottom: 0 }}>
+      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider">{title}</div>
+      <div className="text-3xl font-bold mt-1 text-gray-800">{value}</div>
     </div>
   );
 }

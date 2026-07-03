@@ -78,6 +78,72 @@ public class DashboardService {
         double avgUat = calculateAverageDuration(historyByRequest, RequestStatus.UAT, RequestStatus.READY_FOR_RELEASE);
         double avgUatToRelease = calculateAverageDuration(historyByRequest, RequestStatus.READY_FOR_RELEASE, RequestStatus.RELEASED);
 
+        // 11. Average lead time by month
+        Map<String, Double> leadTimeByMonth = new HashMap<>();
+        Map<String, Integer> releasesByMonthCount = new HashMap<>();
+        Map<String, Long> releasesByMonthTotalSec = new HashMap<>();
+
+        for (DeliveryRequest req : allRequests) {
+            if (req.getStatus() == RequestStatus.RELEASED) {
+                List<DeliveryStageHistory> reqHistory = historyByRequest.getOrDefault(req.getId(), List.of());
+                OffsetDateTime releasedAt = reqHistory.stream()
+                        .filter(h -> h.getToStatus() == RequestStatus.RELEASED)
+                        .map(DeliveryStageHistory::getChangedAt)
+                        .max(OffsetDateTime::compareTo)
+                        .orElse(req.getUpdatedAt());
+
+                String monthKey = releasedAt.getYear() + "-" + String.format("%02d", releasedAt.getMonthValue());
+                long leadTimeSeconds = Duration.between(req.getCreatedAt(), releasedAt).getSeconds();
+
+                releasesByMonthTotalSec.merge(monthKey, leadTimeSeconds, Long::sum);
+                releasesByMonthCount.merge(monthKey, 1, Integer::sum);
+            }
+        }
+        releasesByMonthCount.forEach((month, count) -> {
+            double avgDays = (double) releasesByMonthTotalSec.get(month) / count / (24 * 3600);
+            leadTimeByMonth.put(month, Math.round(avgDays * 10.0) / 10.0);
+        });
+
+        // 12 & 13. Owner distributions
+        Map<String, Long> requestsByBusinessOwner = allRequests.stream()
+                .filter(r -> r.getBusinessOwner() != null && !r.getBusinessOwner().isBlank())
+                .collect(Collectors.groupingBy(DeliveryRequest::getBusinessOwner, Collectors.counting()));
+
+        Map<String, Long> requestsByItOwner = allRequests.stream()
+                .filter(r -> r.getItOwner() != null && !r.getItOwner().isBlank())
+                .collect(Collectors.groupingBy(DeliveryRequest::getItOwner, Collectors.counting()));
+
+        // 14. Priority distribution
+        Map<String, Long> requestsByPriority = allRequests.stream()
+                .filter(r -> r.getPriority() != null)
+                .collect(Collectors.groupingBy(r -> r.getPriority().name(), Collectors.counting()));
+
+        // 15. Recent releases (top 5)
+        List<Map<String, Object>> recentReleases = allRequests.stream()
+                .filter(r -> r.getStatus() == RequestStatus.RELEASED)
+                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
+                .limit(5)
+                .map(r -> Map.of(
+                        "id", (Object) r.getId(),
+                        "requestCode", r.getRequestCode(),
+                        "title", r.getTitle(),
+                        "releasedAt", r.getUpdatedAt().toString()
+                ))
+                .collect(Collectors.toList());
+
+        // 16. Upcoming releases (candidates)
+        List<Map<String, Object>> upcomingReleases = allRequests.stream()
+                .filter(r -> r.getStatus() == RequestStatus.READY_FOR_RELEASE)
+                .sorted((a, b) -> a.getUpdatedAt().compareTo(b.getUpdatedAt()))
+                .limit(5)
+                .map(r -> Map.of(
+                        "id", (Object) r.getId(),
+                        "requestCode", r.getRequestCode(),
+                        "title", r.getTitle(),
+                        "updatedAt", r.getUpdatedAt().toString()
+                ))
+                .collect(Collectors.toList());
+
         return DashboardMetricsResponse.builder()
                 .totalRequestsByStatus(statusCount)
                 .avgRequestToReadyDays(avgReqToReady)
@@ -89,6 +155,12 @@ public class DashboardService {
                 .stuckRequestsByStage(stuckRequests)
                 .totalAgingRequests(agingCount)
                 .totalReworkCount(reworkCount)
+                .avgLeadTimeByMonth(leadTimeByMonth)
+                .requestsByBusinessOwner(requestsByBusinessOwner)
+                .requestsByItOwner(requestsByItOwner)
+                .requestsByPriority(requestsByPriority)
+                .recentReleases(recentReleases)
+                .upcomingReleases(upcomingReleases)
                 .build();
     }
 
