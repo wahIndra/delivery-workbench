@@ -89,4 +89,15 @@ export const notificationApi = {
   markAsRead: (id) => api.put(`/notifications/${id}/read`)
 };
 
+export const authApi = {
+  login: (data) => api.post('/auth/login', data),
+  register: (data) => api.post('/auth/register', data)
+};
+
+export const userApi = {
+  getAll: () => api.get('/users'),
+  updateRole: (userId, role) => api.put(`/users/${userId}/role`, { role }),
+  delete: (userId) => api.delete(`/users/${userId}`)
+};
+
 export default api;

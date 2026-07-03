@@ -348,7 +348,7 @@ function ChartCard({ title, height, children }) {
       <div style={{ padding: '1.5rem 1.5rem 0.5rem 1.5rem' }}>
         <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>{title}</h3>
       </div>
-      <div style={{ padding: '1rem 1.5rem 1.5rem 1.5rem', height: height, flex: 1 }}>
+      <div style={{ padding: '1rem 1.5rem 1.5rem 1.5rem', height: height, flex: 1, minHeight: 0, minWidth: 0 }}>
         {children}
       </div>
     </div>

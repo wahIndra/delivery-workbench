@@ -1,0 +1,99 @@
+.admin-users-container {
+  background-color: #0f172a;
+  border-radius: 16px;
+  border: 1px solid #1e293b;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.admin-users-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #1e293b;
+  background-color: #0f172a;
+}
+
+.admin-users-table-container {
+  overflow-x: auto;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-users-table th {
+  padding: 1rem 1.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+
+.admin-users-table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  border-bottom: 1px solid #1e293b;
+  vertical-align: middle;
+}
+
+.admin-users-table tr:hover td {
+  background-color: #1e293b;
+}
+
+.admin-role-select {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.admin-role-select:focus {
+  border-color: #8b5cf6;
+}
+
+.admin-role-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+}
+
+.admin-delete-btn {
+  background-color: transparent;
+  color: #f87171;
+  border: 1px solid #f87171;
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-delete-btn:hover:not(:disabled) {
+  background-color: #f87171;
+  color: white;
+}
+
+.admin-delete-btn:disabled {
+  border-color: #475569;
+  color: #475569;
+  cursor: not-allowed;
+}
