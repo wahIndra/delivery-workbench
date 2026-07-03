@@ -24,10 +24,12 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-container">
-      {/* Sidebar */}
       <aside className="sidebar">
-        <div className="sidebar-header">
-          Delivery Workbench
+        <div className="sidebar-header flex items-center gap-2">
+          <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-glow">
+            DW
+          </div>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-100 to-white">Delivery Workbench</span>
         </div>
         <nav className="sidebar-nav">
           {navItems.map((item) => (

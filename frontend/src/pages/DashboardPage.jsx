@@ -281,9 +281,11 @@ export default function DashboardPage() {
 
 function MetricCard({ title, value, color }) {
   return (
-    <div className="card shadow-sm relative overflow-hidden h-28 flex flex-col justify-center" style={{ borderTop: `4px solid ${color}`, marginBottom: 0 }}>
-      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider">{title}</div>
-      <div className="text-3xl font-bold mt-1 text-gray-800">{value}</div>
+    <div className="card animate-slide-up group" style={{ borderTop: `4px solid ${color}`, background: 'var(--gradient-card)' }}>
+      <div className="text-gray-500 font-medium text-sm tracking-wide uppercase">{title}</div>
+      <div className="text-3xl font-bold mt-2 bg-clip-text text-transparent group-hover:scale-105 transition-transform origin-left" style={{ background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', color: color }}>
+        {value}
+      </div>
     </div>
   );
 }

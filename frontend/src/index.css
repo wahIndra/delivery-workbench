@@ -21,6 +21,11 @@
   --danger-100: #fee2e2;
   --danger-600: #dc2626;
 
+  /* Premium Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
+  --gradient-card: linear-gradient(to right bottom, #ffffff, #f8fafc);
+
   /* Surface and Backgrounds */
   --bg-main: #f8fafc;
   --bg-surface: #ffffff;
@@ -38,17 +43,21 @@
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
   --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.5);
 
   /* Radius */
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
   --radius-full: 9999px;
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* Base Setup */
@@ -61,8 +70,11 @@
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);
+  background-image: radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.05) 0%, transparent 25%),
+                    radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 25%);
+  background-attachment: fixed;
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -78,29 +90,38 @@ a:hover {
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
 }
 
-h1 { font-size: 1.875rem; letter-spacing: -0.025em; }
-h2 { font-size: 1.5rem; letter-spacing: -0.025em; }
-h3 { font-size: 1.25rem; }
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.875rem; }
+h3 { font-size: 1.5rem; }
 
 /* Utilities */
 .glass-panel {
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: var(--shadow-glass);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
+}
+
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Layout */
 .app-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -109,36 +130,30 @@ h3 { font-size: 1.25rem; }
   color: var(--text-inverse);
   display: flex;
   flex-direction: column;
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 10;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+  z-index: 50;
 }
 
 .sidebar-header {
   padding: 1.5rem;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0px 2px 10px rgba(0,0,0,0.2);
+  background: linear-gradient(135deg, #1e293b, #0f172a);
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 1rem 0;
   overflow-y: auto;
+  padding: 1rem 0;
 }
 
 .nav-item {
   display: block;
   padding: 0.75rem 1.5rem;
-  color: #cbd5e1;
+  color: var(--text-muted);
   font-weight: 500;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-normal);
   border-left: 3px solid transparent;
 }
 
@@ -154,23 +169,23 @@ h3 { font-size: 1.25rem; }
 }
 
 .sidebar-footer {
-  padding: 1rem 1.5rem;
+  padding: 1.5rem;
   border-top: 1px solid rgba(255,255,255,0.1);
-  font-size: 0.875rem;
-  color: #94a3b8;
+  background-color: rgba(0,0,0,0.2);
 }
 
+/* Main Content Area */
 .main-content {
   flex: 1;
-  margin-left: 260px;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  overflow: hidden;
 }
 
 .top-header {
-  height: 64px;
-  background-color: var(--bg-surface);
+  height: 72px;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -178,7 +193,8 @@ h3 { font-size: 1.25rem; }
   padding: 0 2rem;
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 40;
+  box-shadow: var(--shadow-sm);
 }
 
 .page-container {
@@ -189,20 +205,62 @@ h3 { font-size: 1.25rem; }
   width: 100%;
 }
 
-/* UI Components */
+/* UI Component/* Cards */
 .card {
   background-color: var(--bg-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  transition: box-shadow var(--transition-fast);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(59, 130, 246, 0.2);
 }
+
+.card:hover::before {
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
 
 .btn {
   display: inline-flex;
